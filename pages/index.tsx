@@ -1,4 +1,5 @@
-import React, { useState, FormEvent } from 'react';
+import React, { useState, FormEvent, useEffect } from 'react';
+import { useRouter } from 'next/router';
 
 interface EvaluationResult {
   success_score: number;
@@ -16,40 +17,68 @@ interface EvaluationResult {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<EvaluationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
+  const [formData, setFormData] = useState({
+    tagline: '',
+    user_base: '',
+    traffic: '',
+    monthly_cost: '',
+    category: ''
+  });
+  const [copySuccess, setCopySuccess] = useState(false);
 
   // Load categories on component mount
-  React.useEffect(() => {
+  useEffect(() => {
     fetch('/api/categories')
       .then(res => res.json())
       .then(data => setCategories(data.categories || []))
       .catch(err => console.error('Failed to load categories:', err));
   }, []);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  // Load form data from URL parameters and trigger analysis
+  useEffect(() => {
+    if (router.isReady && Object.keys(router.query).length > 0) {
+      const { tagline, user_base, traffic, monthly_cost, category } = router.query;
+      
+      if (tagline) {
+        const urlFormData = {
+          tagline: tagline as string,
+          user_base: user_base as string || '',
+          traffic: traffic as string || '',
+          monthly_cost: monthly_cost as string || '',
+          category: category as string || ''
+        };
+        
+        setFormData(urlFormData);
+        
+        // Auto-trigger analysis
+        performAnalysis(urlFormData);
+      }
+    }
+  }, [router.isReady, router.query]);
+
+  const performAnalysis = async (data: typeof formData) => {
     setIsLoading(true);
     setError(null);
     setResult(null);
 
-    const formData = new FormData(event.currentTarget);
-    const data = {
-      title: formData.get('title'),
-      description: formData.get('description'),
-      user_base: parseInt(formData.get('user_base') as string) || 0,
-      traffic: parseInt(formData.get('traffic') as string) || 0,
-      monthly_cost: parseInt(formData.get('monthly_cost') as string) || 0,
-      categories: [formData.get('category') as string].filter(Boolean),
+    const requestData = {
+      tagline: data.tagline,
+      user_base: parseInt(data.user_base) || 0,
+      traffic: parseInt(data.traffic) || 0,
+      monthly_cost: parseInt(data.monthly_cost) || 0,
+      categories: [data.category].filter(Boolean),
     };
 
     try {
       const response = await fetch('/api/successscore', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(requestData),
       });
 
       if (!response.ok) {
@@ -59,8 +88,8 @@ export default function Home() {
       const result = await response.json();
       
       // Calculate breakdown for display
-      const userBase = data.user_base;
-      const monthlyTraffic = data.traffic;
+      const userBase = requestData.user_base;
+      const monthlyTraffic = requestData.traffic;
       const estimatedMRR = Math.max(userBase * 0.05, 0);
       
       setResult({
@@ -81,6 +110,43 @@ export default function Home() {
     }
   };
 
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    
+    const form = new FormData(event.currentTarget);
+    const data = {
+      tagline: form.get('tagline') as string,
+      user_base: form.get('user_base') as string || '',
+      traffic: form.get('traffic') as string || '',
+      monthly_cost: form.get('monthly_cost') as string || '',
+      category: form.get('category') as string || ''
+    };
+
+    setFormData(data);
+
+    // Update URL with parameters
+    const params = new URLSearchParams();
+    Object.entries(data).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+    
+    router.push(`/?${params.toString()}`, undefined, { shallow: true });
+    
+    // Perform analysis
+    await performAnalysis(data);
+  };
+
+  const copyAnalysisUrl = async () => {
+    try {
+      const currentUrl = window.location.href;
+      await navigator.clipboard.writeText(currentUrl);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy URL:', err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-gray-100 font-mono">
       <div className="max-w-6xl mx-auto px-4 py-16">
@@ -94,8 +160,8 @@ export default function Home() {
             Pre-Revenue
           </h1>
           <p className="text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed font-normal">
-            Evaluate your pre-revenue startup using AI and real market data from 500+ successful exits.
-            Free analysis based on <a href="https://littleexits.com" className="text-blue-400 hover:text-blue-300 underline transition-colors" target="_blank" rel="noopener noreferrer">Little Exits</a> marketplace data.
+            Evaluate your pre-revenue startup with a simple tagline and traction metrics. 
+            Get instant AI analysis based on <a href="https://littleexits.com" className="text-blue-400 hover:text-blue-300 underline transition-colors" target="_blank" rel="noopener noreferrer">Little Exits</a> marketplace data from 500+ successful exits.
           </p>
         </header>
 
@@ -103,7 +169,7 @@ export default function Home() {
           
           {/* Form Section */}
           <div className="lg:sticky lg:top-8">
-            <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-8 shadow-xl">
+            <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-8 shadow-xl min-h-[600px]">
               <div className="flex items-center gap-3 mb-8">
                 <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                 <h2 className="text-2xl font-semibold text-white">
@@ -114,28 +180,22 @@ export default function Home() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-300">
-                  Project Name
+                  Tagline
+                  <span className="text-gray-500 text-xs ml-2">(max 128 characters)</span>
                 </label>
                 <input
                   type="text"
-                  name="title"
+                  name="tagline"
                   required
+                  maxLength={128}
+                  value={formData.tagline}
+                  onChange={(e) => setFormData(prev => ({ ...prev, tagline: e.target.value }))}
                   className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
-                  placeholder="MyStartup"
+                  placeholder="AI-powered task automation for small businesses"
                 />
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-300">
-                  Description
-                </label>
-                <textarea
-                  name="description"
-                  rows={3}
-                  required
-                  className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 resize-none"
-                  placeholder="Brief description of what your startup does..."
-                />
+                <div className="text-xs text-gray-500">
+                  {formData.tagline.length}/128 characters
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -147,6 +207,8 @@ export default function Home() {
                     type="number"
                     name="user_base"
                     min="0"
+                    value={formData.user_base}
+                    onChange={(e) => setFormData(prev => ({ ...prev, user_base: e.target.value }))}
                     className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
                     placeholder="1000"
                   />
@@ -159,6 +221,8 @@ export default function Home() {
                     type="number"
                     name="traffic"
                     min="0"
+                    value={formData.traffic}
+                    onChange={(e) => setFormData(prev => ({ ...prev, traffic: e.target.value }))}
                     className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
                     placeholder="5000"
                   />
@@ -174,19 +238,23 @@ export default function Home() {
                     type="number"
                     name="monthly_cost"
                     min="0"
+                    value={formData.monthly_cost}
+                    onChange={(e) => setFormData(prev => ({ ...prev, monthly_cost: e.target.value }))}
                     className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
                     placeholder="500"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-300">
-                    Category/Stack
+                    Product Stack
                   </label>
                   <select
                     name="category"
+                    value={formData.category}
+                    onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
                     className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
                   >
-                    <option value="">Select Category/Stack</option>
+                    <option value="">Select Stack</option>
                     {categories.map((category) => (
                       <option key={category} value={category}>
                         {category}
@@ -219,12 +287,36 @@ export default function Home() {
           </div>
 
           {/* Results Section */}
-          <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-8 shadow-xl">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-              <h2 className="text-2xl font-semibold text-white">
-                Analysis Results
-              </h2>
+          <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-8 shadow-xl min-h-[600px]">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                <h2 className="text-2xl font-semibold text-white">
+                  Analysis Results
+                </h2>
+              </div>
+              {result && (
+                <button
+                  onClick={copyAnalysisUrl}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-800/50 hover:bg-gray-700/50 border border-gray-700/50 rounded-xl text-gray-300 hover:text-white transition-all duration-200 text-sm"
+                >
+                  {copySuccess ? (
+                    <>
+                      <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      Share Analysis
+                    </>
+                  )}
+                </button>
+              )}
             </div>
 
             {!result && !isLoading && (
@@ -363,6 +455,11 @@ export default function Home() {
                       <p className="text-yellow-400 font-medium mb-2">Success Score Logic</p>
                       <p>Combines user growth rate, traffic quality, market timing, and sustainability factors. Higher scores indicate stronger fundamentals for eventual monetization.</p>
                     </div>
+                    
+                    <div className="bg-gradient-to-r from-indigo-900/30 to-indigo-800/20 p-4 rounded-xl border border-indigo-700/30">
+                      <p className="text-indigo-400 font-medium mb-2">Tagline Analysis</p>
+                      <p>Your one-sentence tagline is analyzed by AI to assess market positioning, value proposition clarity, and business model viability. The concise format helps with better AI analysis and cleaner URL sharing.</p>
+                    </div>
                   </div>
                 </div>
 
@@ -370,7 +467,7 @@ export default function Home() {
                 <div className="bg-gray-800/50 border border-gray-700/50 rounded-2xl p-6 backdrop-blur-sm">
                   <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                     <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                     Data Sources
                   </h3>

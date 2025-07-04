@@ -223,14 +223,34 @@ async function getSuccessScoreFromChatGPT(formData: any) {
   const prompt = constructPrompt(formData);
   
   try {
-    const gptResponse = await fetch("/api/openai", {
+    // Check for OpenAI API Key
+    const openaiApiKey = process.env.OPENAI_API_KEY;
+    if (!openaiApiKey) {
+      console.warn("OpenAI API key is not configured, using fallback score");
+      return calculateFallbackScore(formData);
+    }
+
+    const payload = {
+      model: "gpt-3.5-turbo-instruct",
+      prompt,
+      temperature: 0.3,
+      top_p: 1,
+      frequency_penalty: 0,
+      presence_penalty: 0,
+      max_tokens: 500,
+    };
+
+    const gptResponse = await fetch("https://api.openai.com/v1/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${openaiApiKey}`,
+      },
+      body: JSON.stringify(payload),
     });
 
     if (!gptResponse.ok) {
-      throw new Error("Failed to get response from OpenAI");
+      throw new Error(`OpenAI API responded with status ${gptResponse.status}`);
     }
 
     const { choices } = await gptResponse.json();
@@ -244,8 +264,7 @@ async function getSuccessScoreFromChatGPT(formData: any) {
 }
 
 function constructPrompt(formData: any): string {
-  const title = formData.title as string;
-  const description = formData.description as string;
+  const tagline = formData.tagline as string;
   const userBase = formData.user_base as string;
   const monthlyTraffic = formData.traffic as string;
   const categories = formData.categories || [];
@@ -257,8 +276,7 @@ function constructPrompt(formData: any): string {
 
 Analyze this pre-revenue startup:
 
-Title: "${title}"
-Description: ${description}
+Tagline: "${tagline}"
 User Base: ${userBase} users
 Monthly Traffic: ${monthlyTraffic} unique visitors
 Categories: ${categoriesFormatted}
@@ -266,12 +284,19 @@ Monthly Costs: $${monthlyCost}
 
 Based on Little Exits data (avg revenue multiples 2.5x, traffic value $0.10/visitor, community value $5/user), evaluate:
 
-1. Market demand and category performance
+1. Market demand and business clarity from tagline
 2. User traction vs growth potential
 3. Revenue potential and monetization clarity
-4. Technical viability
+4. Category performance and market fit
 5. Cost structure efficiency
-6. Description quality and business model clarity
+6. Tagline quality and value proposition clarity
+
+The tagline should clearly communicate the startup's value proposition in one sentence. Analyze:
+- Market size and opportunity
+- Competitive differentiation
+- Monetization potential
+- Technical feasibility
+- Target market clarity
 
 Provide a success score from 0-100 where:
 - 0-30: Low likelihood of successful exit
@@ -318,8 +343,19 @@ function calculateFallbackScore(formData: any): number {
     // Lower performers get no bonus
   }
   
-  // Description quality
-  if (formData.description && formData.description.length > 100) score += 5;
+  // Tagline quality scoring
+  if (formData.tagline && formData.tagline.length > 20) {
+    const tagline = formData.tagline.toLowerCase();
+    // Look for value proposition indicators
+    const valueWords = ['ai', 'automation', 'platform', 'solution', 'tool', 'service', 'for', 'helps', 'enables'];
+    const hasValueProposition = valueWords.some(word => tagline.includes(word));
+    if (hasValueProposition) score += 8;
+    
+    // Bonus for clear target market
+    const targetMarketWords = ['businesses', 'developers', 'teams', 'companies', 'users'];
+    const hasTargetMarket = targetMarketWords.some(word => tagline.includes(word));
+    if (hasTargetMarket) score += 5;
+  }
   
   // Cost efficiency
   if (monthlyCost > 0) {
