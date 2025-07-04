@@ -168,12 +168,16 @@ export default function Home() {
         
         {/* Header */}
         <header className="text-center mb-12 sm:mb-20">
-          <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mb-4 sm:mb-6 shadow-lg shadow-blue-500/25">
-            <span className="text-xl sm:text-2xl font-bold text-white">PR</span>
+          <div className="flex items-center justify-center gap-4 mb-4 sm:mb-6">
+            <img 
+              src="/Little Exits Icon Dark.png" 
+              alt="Little Exits Logo" 
+              className="w-12 h-12 sm:w-16 sm:h-16"
+            />
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight">
+              Pre-Revenue
+            </h1>
           </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 text-white tracking-tight">
-            Pre-Revenue
-          </h1>
           <p className="text-base sm:text-lg lg:text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed font-normal px-4">
             Evaluate your pre-revenue startup with a simple tagline and traction metrics. 
             Get instant AI analysis based on <a href="https://littleexits.com" className="text-blue-400 hover:text-blue-300 underline transition-colors" target="_blank" rel="noopener noreferrer">Little Exits</a> marketplace data from 200+ successful exits.

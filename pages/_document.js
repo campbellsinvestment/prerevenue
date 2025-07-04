@@ -5,7 +5,8 @@ class MyDocument extends Document {
     return (
       <Html lang="en">
       <Head>
-        <link rel='icon' href='/favicon.png' />
+        <title>Pre-Revenue | Free Startup Evaluation Tool</title>
+        <link rel='icon' href='/Little Exits Icon Dark.png' />
         <meta
           name="description"
           content="Evaluate your pre-revenue startup with AI analysis based on Little Exits marketplace data from 200+ successful exits."
