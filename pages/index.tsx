@@ -1,5 +1,6 @@
-import React, { useState, FormEvent, useEffect } from 'react';
+import React, { useState, FormEvent, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
+import Image from 'next/image';
 
 interface EvaluationResult {
   success_score: number;
@@ -54,29 +55,7 @@ export default function Home() {
       .catch(err => console.error('Failed to load top performers:', err));
   }, []);
 
-  // Load form data from URL parameters and trigger analysis
-  useEffect(() => {
-    if (router.isReady && Object.keys(router.query).length > 0) {
-      const { tagline, user_base, traffic, monthly_cost, category } = router.query;
-      
-      if (tagline) {
-        const urlFormData = {
-          tagline: tagline as string,
-          user_base: user_base as string || '',
-          traffic: traffic as string || '',
-          monthly_cost: monthly_cost as string || '',
-          category: category as string || ''
-        };
-        
-        setFormData(urlFormData);
-        
-        // Auto-trigger analysis
-        performAnalysis(urlFormData);
-      }
-    }
-  }, [router.isReady, router.query]);
-
-  const performAnalysis = async (data: typeof formData) => {
+  const performAnalysis = useCallback(async (data: typeof formData) => {
     setIsLoading(true);
     setError(null);
     setResult(null);
@@ -123,7 +102,29 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  // Load form data from URL parameters and trigger analysis
+  useEffect(() => {
+    if (router.isReady && Object.keys(router.query).length > 0) {
+      const { tagline, user_base, traffic, monthly_cost, category } = router.query;
+      
+      if (tagline) {
+        const urlFormData = {
+          tagline: tagline as string,
+          user_base: user_base as string || '',
+          traffic: traffic as string || '',
+          monthly_cost: monthly_cost as string || '',
+          category: category as string || ''
+        };
+        
+        setFormData(urlFormData);
+        
+        // Auto-trigger analysis
+        performAnalysis(urlFormData);
+      }
+    }
+  }, [router.isReady, router.query, performAnalysis]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -169,9 +170,11 @@ export default function Home() {
         {/* Header */}
         <header className="text-center mb-12 sm:mb-20">
           <div className="flex items-center justify-center gap-4 mb-4 sm:mb-6">
-            <img 
+            <Image 
               src="/Little Exits Icon Dark.png" 
               alt="Little Exits Logo" 
+              width={48}
+              height={48}
               className="w-12 h-12 sm:w-16 sm:h-16"
             />
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight">
@@ -192,9 +195,11 @@ export default function Home() {
               rel="noopener noreferrer"
               className="flex items-center gap-2 hover:text-gray-400 transition-colors"
             >
-              <img 
+              <Image 
                 src="/Little Exits Icon Dark.png" 
                 alt="Little Exits" 
+                width={20}
+                height={20}
                 className="w-5 h-5 rounded"
               />
               <span className="font-medium">Little Exits</span>
@@ -644,7 +649,7 @@ export default function Home() {
                     {topPerformers.keywords.slice(0, 5).map((keyword, idx) => (
                       <div key={idx} className="bg-amber-900/40 rounded-xl border border-amber-800/50 p-6 hover:bg-amber-900/50 transition-all duration-200 h-full flex flex-col min-w-0">
                         <div className="text-center flex-1 flex flex-col justify-center">
-                          <div className="text-gray-200 font-semibold text-sm mb-2 break-words">"{keyword.word}"</div>
+                          <div className="text-gray-200 font-semibold text-sm mb-2 break-words">&quot;{keyword.word}&quot;</div>
                           <div className="text-amber-300 font-bold text-2xl mb-2">{keyword.frequency}×</div>
                           <div className="text-sm text-gray-400 mt-auto">
                             <div>mentioned</div>

@@ -1,0 +1,19 @@
+{
+  "name": "Pre-Revenue - Startup Evaluation Tool",
+  "short_name": "Pre-Revenue",
+  "description": "Free pre-revenue startup evaluation tool powered by Little Exits marketplace data",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#3B82F6",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity", "finance"],
+  "icons": [
+    {
+      "src": "/Little Exits Icon Dark.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
