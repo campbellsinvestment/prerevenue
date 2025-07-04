@@ -1,7 +1,5 @@
 // pages/api/successscore/index.ts
 import { NextApiRequest, NextApiResponse } from 'next';
-import * as fs from 'fs';
-import * as path from 'path';
 
 interface ValuationMetrics {
   avgRevenueMultiple: number;
@@ -9,77 +7,6 @@ interface ValuationMetrics {
   avgTrafficValue: number;
   avgCommunityValue: number;
   categoryMultipliers: { [category: string]: number };
-}
-
-// Market performance data based on Little Exits successful exits and offers
-const MARKET_PERFORMANCE_DATA: { [key: string]: number } = {
-  // High performers (1.4x - 1.6x multiplier) - categories with most successful exits
-  'SaaS': 1.5,
-  'AI': 1.6,
-  'E-commerce': 1.4,
-  'Webflow': 1.4,
-  'Chrome Extension': 1.3,
-  'API': 1.3,
-  'Automation': 1.3,
-  
-  // Strong performers (1.1x - 1.3x multiplier) - good success rate
-  'Marketplace': 1.2,
-  'Newsletter': 1.2,
-  'Web3': 1.2,
-  'NFT': 1.2,
-  'Crypto': 1.2,
-  'Native app': 1.1,
-  'iOS': 1.1,
-  'Android': 1.1,
-  'Plugin': 1.1,
-  'Shopify': 1.1,
-  'Next.js': 1.1,
-  'React': 1.1,
-  'Node.js': 1.1,
-  
-  // Average performers (0.9x - 1.0x multiplier) - moderate success
-  'Community': 1.0,
-  'Chat Bot': 1.0,
-  'Web scraper': 1.0,
-  'Notion': 1.0,
-  'Airtable': 1.0,
-  'Zapier': 1.0,
-  'Blog': 0.9,
-  'Directory': 0.9,
-  'Forum': 0.9,
-  'Review': 0.9,
-  
-  // Lower performers (0.7x - 0.8x multiplier) - fewer successful exits
-  'Gumroad Course': 0.8,
-  'Source Code': 0.8,
-  'Spreadsheet': 0.8,
-  'Physical': 0.7,
-  'Inventory Holding': 0.7,
-  'Dropship': 0.7,
-  
-  // Development tools and platforms (variable based on implementation)
-  'Bubble': 1.0,
-  'Adalo': 1.0,
-  'GlideApps': 1.0,
-  'Softr': 1.0,
-  'Wordpress': 0.9,
-  'Dorik': 0.9,
-  'Backendless': 1.0,
-};
-
-function loadCategories(): { [key: string]: string } {
-  try {
-    const categoriesPath = path.join(process.cwd(), 'data', 'categories.json');
-    const categoriesData = fs.readFileSync(categoriesPath, 'utf8');
-    return JSON.parse(categoriesData);
-  } catch (error) {
-    console.error('Error loading categories:', error);
-    return {};
-  }
-}
-
-function getCategoryMultiplier(category: string): number {
-  return MARKET_PERFORMANCE_DATA[category] || 1.0;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -112,13 +39,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 async function getEstimatedValuation(formData: any): Promise<number> {
   try {
-    // Use market-based valuation metrics
+    // Use default valuation metrics (could fetch from analyze-success-patterns in production)
     const metrics: ValuationMetrics = {
       avgRevenueMultiple: 2.5,
       avgProfitMultiple: 3.0,
       avgTrafficValue: 0.1,
       avgCommunityValue: 5,
-      categoryMultipliers: MARKET_PERFORMANCE_DATA
+      categoryMultipliers: {
+        'SaaS': 1.3,
+        'AI': 1.4,
+        'E-commerce': 1.1,
+        'Community': 1.0,
+        'Newsletter': 0.9,
+        'Marketplace': 1.2,
+        'Web3': 1.5,
+        'Mobile App': 1.1
+      }
     };
 
     // Extract data from form
@@ -160,10 +96,10 @@ async function getEstimatedValuation(formData: any): Promise<number> {
       estimatedValue = estimatedValue / valuationMethods;
     }
 
-    // Apply market performance-based category multiplier
+    // Apply category multiplier if available
     let categoryMultiplier = 1;
-    if (categories.length > 0) {
-      const categoryValues = categories.map((cat: string) => getCategoryMultiplier(cat));
+    if (categories.length > 0 && metrics.categoryMultipliers) {
+      const categoryValues = categories.map((cat: string) => metrics.categoryMultipliers[cat] || 1);
       categoryMultiplier = categoryValues.reduce((a: number, b: number) => a + b, 0) / categoryValues.length;
     }
     estimatedValue = estimatedValue * categoryMultiplier;
@@ -273,14 +209,10 @@ function calculateFallbackScore(formData: any): number {
   else if (monthlyTraffic > 10000) score += 10;
   else if (monthlyTraffic > 1000) score += 5;
   
-  // Market performance-based category scoring
-  for (const category of categories) {
-    const multiplier = getCategoryMultiplier(category);
-    if (multiplier >= 1.4) score += 12; // High performers
-    else if (multiplier >= 1.2) score += 8; // Strong performers
-    else if (multiplier >= 1.0) score += 4; // Average performers
-    // Lower performers get no bonus
-  }
+  // Category scoring
+  if (categories.includes("AI")) score += 10;
+  if (categories.includes("SaaS")) score += 8;
+  if (categories.includes("Web3")) score += 6;
   
   // Description quality
   if (formData.description && formData.description.length > 100) score += 5;
@@ -294,5 +226,3 @@ function calculateFallbackScore(formData: any): number {
   
   return Math.min(100, Math.max(0, score));
 }
-
-

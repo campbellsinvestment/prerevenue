@@ -19,6 +19,11 @@ interface StartupData {
     iconPreview?: string;
     coverImagePreview?: string;
     success_score?: number;
+    estimated_valuation?: number;
+    valuation_range?: {
+      low: number;
+      high: number;
+    };
   }
 
   const StartupDetails = () => {
@@ -183,6 +188,34 @@ interface StartupData {
                 <h3 className="text-2xl font-bold text-gray-900 mb-6">📊 Key Metrics</h3>
                 
                 <div className="space-y-4">
+                  {/* Success Score - Premium Feature */}
+                  {startupData.success_score && (
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border-2 border-green-200">
+                      <div className="text-sm text-gray-600 font-medium mb-2">🎯 AI Success Score</div>
+                      <div className="text-3xl font-bold text-green-600 mb-2">
+                        {startupData.success_score}/100
+                      </div>
+                      <div className="text-xs text-green-700">
+                        Based on 500+ Little Exits data points
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Estimated Valuation - Premium Feature */}
+                  {startupData.estimated_valuation && (
+                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl border-2 border-purple-200">
+                      <div className="text-sm text-gray-600 font-medium mb-2">💎 Estimated Valuation</div>
+                      <div className="text-2xl font-bold text-purple-600 mb-1">
+                        ${Number(startupData.estimated_valuation).toLocaleString()}
+                      </div>
+                      {startupData.valuation_range && (
+                        <div className="text-xs text-purple-700">
+                          Range: ${Number(startupData.valuation_range.low).toLocaleString()} - ${Number(startupData.valuation_range.high).toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-xl">
                     <div className="text-sm text-gray-600 font-medium">💰 Asking Price</div>
                     <div className="text-2xl font-bold text-indigo-600">

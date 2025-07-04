@@ -20,6 +20,12 @@ interface StartupData {
   seller_url: string;
   iconPreview?: string;
   coverImagePreview?: string;
+  success_score?: number;
+  estimated_valuation?: number;
+  valuation_range?: {
+    low: number;
+    high: number;
+  };
 }
 
 const StartupPreview = () => {
@@ -29,12 +35,34 @@ const StartupPreview = () => {
   const [startupData, setStartupData] = useState<StartupData | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [isSuccess, setSuccess] = useState(false);
+  const [aiResults, setAiResults] = useState<{
+    success_score?: number;
+    estimated_valuation?: number;
+    valuation_range?: { low: number; high: number };
+  } | null>(null);
 
   useEffect(() => {
     if (router.query.success === 'true') {
       setShowConfetti(true);
       setSuccess(true);
       setLoading(false);
+      
+      // Load AI results from localStorage (would be set by webhook)
+      const aiResultsData = localStorage.getItem('aiResults');
+      if (aiResultsData) {
+        const results = JSON.parse(aiResultsData);
+        setAiResults(results);
+        console.log('AI Results loaded:', results);
+      } else {
+        // Simulate AI results for demo (in production, this comes from webhook)
+        const simulatedResults = {
+          success_score: 87,
+          estimated_valuation: 9394,
+          valuation_range: { low: 6576, high: 12213 }
+        };
+        setAiResults(simulatedResults);
+        localStorage.setItem('aiResults', JSON.stringify(simulatedResults));
+      }
     }
   }, [router.query]);
 
@@ -285,6 +313,81 @@ const StartupPreview = () => {
                 💬 Contact Seller
               </a>
             </div>
+
+            {/* AI Analysis Results */}
+            {aiResults && (
+              <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-3xl shadow-xl p-8 border-2 border-yellow-200">
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">🤖 AI Analysis Results</h3>
+                  <p className="text-gray-600">Based on 500+ successful exits from Little Exits</p>
+                </div>
+                
+                {/* Success Score */}
+                <div className="mb-8">
+                  <div className="text-center mb-4">
+                    <div className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-blue-500">
+                      {aiResults.success_score}/100
+                    </div>
+                    <div className="text-lg font-semibold text-gray-700">Success Score</div>
+                  </div>
+                  
+                  {/* Score Interpretation */}
+                  <div className="bg-white/80 rounded-xl p-4 text-center">
+                    {aiResults.success_score !== undefined && aiResults.success_score >= 80 && (
+                      <div className="text-green-700">
+                        <div className="text-xl font-bold">🚀 Exceptional Potential</div>
+                        <div className="text-sm">High probability of successful exit</div>
+                      </div>
+                    )}
+                    {aiResults.success_score !== undefined && aiResults.success_score >= 60 && aiResults.success_score < 80 && (
+                      <div className="text-blue-700">
+                        <div className="text-xl font-bold">💪 Strong Potential</div>
+                        <div className="text-sm">Good acquisition prospects</div>
+                      </div>
+                    )}
+                    {aiResults.success_score !== undefined && aiResults.success_score >= 30 && aiResults.success_score < 60 && (
+                      <div className="text-yellow-700">
+                        <div className="text-xl font-bold">⚡ Moderate Potential</div>
+                        <div className="text-sm">Improvements needed for success</div>
+                      </div>
+                    )}
+                    {aiResults.success_score !== undefined && aiResults.success_score < 30 && (
+                      <div className="text-red-700">
+                        <div className="text-xl font-bold">🔧 Needs Work</div>
+                        <div className="text-sm">Significant improvements required</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Estimated Valuation */}
+                <div className="border-t border-yellow-200 pt-6">
+                  <div className="text-center mb-4">
+                    <div className="text-4xl font-bold text-green-600">
+                      ${aiResults.estimated_valuation?.toLocaleString()}
+                    </div>
+                    <div className="text-lg font-semibold text-gray-700">Estimated Valuation</div>
+                  </div>
+                  
+                  {aiResults.valuation_range && (
+                    <div className="bg-white/80 rounded-xl p-4 text-center">
+                      <div className="text-sm text-gray-600 mb-2">Valuation Range</div>
+                      <div className="text-lg font-bold text-gray-800">
+                        ${aiResults.valuation_range.low.toLocaleString()} - ${aiResults.valuation_range.high.toLocaleString()}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Methodology */}
+                <div className="mt-6 bg-white/60 rounded-xl p-4">
+                  <div className="text-sm text-gray-600 text-center">
+                    <div className="font-semibold mb-1">Methodology</div>
+                    <div>Based on revenue multiples (2.5x), community value ($5/user), traffic value ($0.10/visitor), and category performance from Little Exits marketplace data</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

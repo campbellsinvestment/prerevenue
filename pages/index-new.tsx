@@ -19,15 +19,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<EvaluationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [categories, setCategories] = useState<string[]>([]);
-
-  // Load categories on component mount
-  React.useEffect(() => {
-    fetch('/api/categories')
-      .then(res => res.json())
-      .then(data => setCategories(data.categories || []))
-      .catch(err => console.error('Failed to load categories:', err));
-  }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -173,18 +164,21 @@ export default function Home() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Category/Stack
+                    Category
                   </label>
                   <select
                     name="category"
                     className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="">Select Category/Stack</option>
-                    {categories.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
+                    <option value="">Select Category</option>
+                    <option value="SaaS">SaaS</option>
+                    <option value="E-commerce">E-commerce</option>
+                    <option value="AI">AI</option>
+                    <option value="Community">Community</option>
+                    <option value="Newsletter">Newsletter</option>
+                    <option value="Marketplace">Marketplace</option>
+                    <option value="Web3">Web3</option>
+                    <option value="Mobile App">Mobile App</option>
                   </select>
                 </div>
               </div>
@@ -288,9 +282,7 @@ export default function Home() {
                     <p>• Revenue multiple: 2.5x average annual revenue</p>
                     <p>• Traffic value: $0.10 per monthly visitor</p>
                     <p>• Community value: $5.00 per user</p>
-                    <p>• Market performance multipliers based on actual exit data</p>
-                    <p>• High-performing categories (AI, SaaS): 1.4x-1.6x multiplier</p>
-                    <p>• Categories with fewer exits get lower multipliers</p>
+                    <p>• Category performance adjustments applied</p>
                   </div>
                 </div>
               </div>
