@@ -88,6 +88,10 @@ class MyDocument extends Document {
         {/* Preconnect to external domains */}
         <link rel="preconnect" href="https://api.openai.com" />
         <link rel="preconnect" href="https://littleexits.com" />
+        <link rel="preconnect" href="https://plausible.io" />
+        
+        {/* Analytics */}
+        <script defer data-domain="prerevenue.io" src="https://plausible.io/js/script.js"></script>
         
         <meta
           name="description"
