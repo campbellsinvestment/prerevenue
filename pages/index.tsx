@@ -6,6 +6,7 @@ import Image from 'next/image';
 interface EvaluationResult {
   success_score: number;
   estimated_valuation: number;
+  is_max_valuation: boolean;
   valuation_range: {
     low: number;
     high: number;
@@ -36,9 +37,10 @@ export default function Home() {
     user_base: '',
     traffic: '',
     monthly_cost: '',
-    category: ''
+    categories: [] as string[]
   });
   const [copySuccess, setCopySuccess] = useState(false);
+  const [showScoreModal, setShowScoreModal] = useState(false);
 
   // Load categories on component mount
   useEffect(() => {
@@ -66,7 +68,7 @@ export default function Home() {
       user_base: parseInt(data.user_base) || 0,
       traffic: parseInt(data.traffic) || 0,
       monthly_cost: parseInt(data.monthly_cost) || 0,
-      categories: [data.category].filter(Boolean),
+      categories: data.categories,
     };
 
     try {
@@ -82,20 +84,44 @@ export default function Home() {
 
       const result = await response.json();
       
-      // Calculate breakdown for display
+      // Calculate breakdown for display - these should match backend logic more closely
       const userBase = requestData.user_base;
       const monthlyTraffic = requestData.traffic;
-      const estimatedMRR = Math.max(userBase * 0.05, 0);
+      const estimatedMRR = Math.max(userBase * 0.03, 0); // Match backend conversion rate
+      
+      // Calculate base components using backend logic
+      let userValue = 0;
+      if (userBase >= 10000) userValue = userBase * 8;
+      else if (userBase >= 5000) userValue = userBase * 6;
+      else if (userBase >= 2500) userValue = userBase * 5;
+      else if (userBase >= 1000) userValue = userBase * 3;
+      else if (userBase >= 500) userValue = userBase * 2;
+      else userValue = userBase * 1;
+
+      let trafficValue = 0;
+      if (monthlyTraffic >= 100000) trafficValue = monthlyTraffic * 0.15;
+      else if (monthlyTraffic >= 50000) trafficValue = monthlyTraffic * 0.12;
+      else if (monthlyTraffic >= 20000) trafficValue = monthlyTraffic * 0.10;
+      else if (monthlyTraffic >= 8000) trafficValue = monthlyTraffic * 0.08;
+      else if (monthlyTraffic >= 3000) trafficValue = monthlyTraffic * 0.05;
+      else trafficValue = monthlyTraffic * 0.02;
+
+      const revenueValue = estimatedMRR * 12 * 1.8; // Match backend: MRR * 12 * 1.8
+      const baseValue = userValue + trafficValue + revenueValue;
+      
+      // Calculate effective multiplier by reverse engineering from final valuation
+      const effectiveMultiplier = baseValue > 0 ? result.estimatedValuation / baseValue : 1.0;
       
       setResult({
         success_score: result.successScore || 50,
         estimated_valuation: result.estimatedValuation || 5000,
+        is_max_valuation: result.isMaxValuation || false,
         valuation_range: result.valuationRange || { low: 3500, high: 6500 },
         breakdown: {
-          revenue: Math.round(estimatedMRR * 12 * 2.5),
-          traffic: Math.round(monthlyTraffic * 0.1),
-          community: Math.round(userBase * 5),
-          multiplier: 1.2
+          revenue: Math.round(revenueValue),
+          traffic: Math.round(trafficValue),
+          community: Math.round(userValue),
+          multiplier: Math.round(effectiveMultiplier * 100) / 100 // Round to 2 decimal places
         }
       });
     } catch (err) {
@@ -108,7 +134,7 @@ export default function Home() {
   // Load form data from URL parameters and trigger analysis
   useEffect(() => {
     if (router.isReady && Object.keys(router.query).length > 0) {
-      const { tagline, user_base, traffic, monthly_cost, category } = router.query;
+      const { tagline, user_base, traffic, monthly_cost, categories } = router.query;
       
       if (tagline) {
         const urlFormData = {
@@ -116,7 +142,7 @@ export default function Home() {
           user_base: user_base as string || '',
           traffic: traffic as string || '',
           monthly_cost: monthly_cost as string || '',
-          category: category as string || ''
+          categories: categories ? (Array.isArray(categories) ? categories : [categories as string]) : []
         };
         
         setFormData(urlFormData);
@@ -131,12 +157,13 @@ export default function Home() {
     event.preventDefault();
     
     const form = new FormData(event.currentTarget);
+    const selectedCategories = Array.from(form.getAll('categories')) as string[];
     const data = {
       tagline: form.get('tagline') as string,
       user_base: form.get('user_base') as string || '',
       traffic: form.get('traffic') as string || '',
       monthly_cost: form.get('monthly_cost') as string || '',
-      category: form.get('category') as string || ''
+      categories: selectedCategories
     };
 
     setFormData(data);
@@ -144,7 +171,11 @@ export default function Home() {
     // Update URL with parameters
     const params = new URLSearchParams();
     Object.entries(data).forEach(([key, value]) => {
-      if (value) params.set(key, value);
+      if (key === 'categories' && Array.isArray(value)) {
+        value.forEach(cat => params.append('categories', cat));
+      } else if (value && typeof value === 'string') {
+        params.set(key, value);
+      }
     });
     
     router.push(`/?${params.toString()}`, undefined, { shallow: true });
@@ -262,7 +293,7 @@ export default function Home() {
                 </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-300">
-                    Monthly Traffic
+                    Monthly Unique Visitors
                   </label>
                   <input
                     type="number"
@@ -293,21 +324,77 @@ export default function Home() {
                 </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-300">
-                    Product Stack
+                    Categories
+                    <span className="text-gray-500 text-xs ml-2">(select up to 3)</span>
                   </label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                    className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
-                  >
-                    <option value="">Select Stack</option>
-                    {categories.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
+                  <div className="relative">
+                    <select
+                      className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
+                      value=""
+                      onChange={(e) => {
+                        const selectedCategory = e.target.value;
+                        if (selectedCategory && !formData.categories.includes(selectedCategory) && formData.categories.length < 3) {
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            categories: [...prev.categories, selectedCategory]
+                          }));
+                        }
+                        e.target.value = "";
+                      }}
+                      disabled={formData.categories.length >= 3}
+                    >
+                      <option value="" disabled>
+                        {formData.categories.length >= 3 ? "Maximum 3 categories selected" : "Add a category..."}
                       </option>
+                      {categories
+                        .filter(category => !formData.categories.includes(category))
+                        .map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                    </select>
+                    
+                    {/* Hidden inputs for form submission */}
+                    {formData.categories.map((category) => (
+                      <input 
+                        key={category}
+                        type="hidden" 
+                        name="categories" 
+                        value={category} 
+                      />
                     ))}
-                  </select>
+                  </div>
+                  
+                  {/* Selected Categories Tags */}
+                  {formData.categories.length > 0 && (
+                    <div className="mt-3">
+                      <div className="text-xs text-gray-400 mb-2">
+                        Selected ({formData.categories.length}/3):
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {formData.categories.map((category) => (
+                          <span 
+                            key={category} 
+                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600/20 text-blue-300 text-sm rounded-lg border border-blue-500/30 hover:bg-blue-600/30 transition-colors"
+                          >
+                            <span>{category}</span>
+                            <button
+                              type="button"
+                              onClick={() => setFormData(prev => ({ 
+                                ...prev, 
+                                categories: prev.categories.filter(c => c !== category) 
+                              }))}
+                              className="text-blue-300 hover:text-white text-lg leading-none font-medium"
+                              title={`Remove ${category}`}
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -389,30 +476,105 @@ export default function Home() {
               <div className="space-y-4 sm:space-y-6">
                 
                 {/* Success Score */}
-                <div className="bg-gradient-to-br from-green-900/30 to-green-800/20 border border-green-700/30 rounded-2xl p-4 sm:p-6 backdrop-blur-sm">
+                <div className={`rounded-2xl p-4 sm:p-6 backdrop-blur-sm ${
+                  result.success_score >= 60 
+                    ? 'bg-gradient-to-br from-green-900/30 to-green-800/20 border border-green-700/30' 
+                    : result.success_score >= 40 
+                    ? 'bg-gradient-to-br from-yellow-900/30 to-yellow-800/20 border border-yellow-700/30'
+                    : result.success_score >= 20
+                    ? 'bg-gradient-to-br from-orange-900/30 to-orange-800/20 border border-orange-700/30'
+                    : 'bg-gradient-to-br from-red-900/30 to-red-800/20 border border-red-700/30'
+                }`}>
                   <div className="text-center">
-                    <div className="text-4xl sm:text-5xl font-bold text-green-400 mb-2 sm:mb-3">
+                    <div className={`text-4xl sm:text-5xl font-bold mb-2 sm:mb-3 ${
+                      result.success_score >= 60 
+                        ? 'text-green-400' 
+                        : result.success_score >= 40 
+                        ? 'text-yellow-400'
+                        : result.success_score >= 20
+                        ? 'text-orange-400'
+                        : 'text-red-400'
+                    }`}>
                       {result.success_score}/100
                     </div>
-                    <div className="text-gray-300 text-base sm:text-lg mb-2">Success Score</div>
-                    <div className="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-green-500/20 text-green-300 border border-green-500/30">
-                      {result.success_score >= 80 && 'Exceptional potential'}
-                      {result.success_score >= 60 && result.success_score < 80 && 'Strong potential'}
-                      {result.success_score >= 30 && result.success_score < 60 && 'Moderate potential'}
-                      {result.success_score < 30 && 'Needs improvement'}
+                    <div className="text-gray-300 text-base sm:text-lg mb-2 flex items-center justify-center gap-2">
+                      Success Score
+                      <button
+                        onClick={() => setShowScoreModal(true)}
+                        className="text-gray-400 hover:text-white transition-colors p-1 rounded-full hover:bg-gray-700/30"
+                        title="How your score was calculated"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${
+                      result.success_score >= 80 
+                        ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                        : result.success_score >= 60 
+                        ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                        : result.success_score >= 40 
+                        ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
+                        : result.success_score >= 20
+                        ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+                        : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                    }`}>
+                      {result.success_score >= 80 && 'Exceptional potential - Likely to succeed'}
+                      {result.success_score >= 60 && result.success_score < 80 && 'Strong potential - Good acquisition target'}
+                      {result.success_score >= 40 && result.success_score < 60 && 'Moderate potential - Needs improvements'}
+                      {result.success_score >= 20 && result.success_score < 40 && 'Significant issues - Major changes needed'}
+                      {result.success_score < 20 && 'Critical problems - Consider pivot or major overhaul'}
                     </div>
                   </div>
                 </div>
 
                 {/* Valuation */}
-                <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/30 rounded-2xl p-4 sm:p-6 backdrop-blur-sm">
-                  <div className="text-center">
-                    <div className="text-3xl sm:text-4xl font-bold text-blue-400 mb-2 sm:mb-3">
-                      ${result.estimated_valuation.toLocaleString()}
+                <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/30 rounded-2xl p-4 sm:p-6 backdrop-blur-sm relative overflow-hidden">
+                  {result.is_max_valuation && (
+                    <div className="absolute top-0 right-0 bg-gradient-to-l from-yellow-500/20 to-transparent w-20 h-full pointer-events-none">
+                      <div className="absolute top-2 right-2 flex items-center gap-1 bg-yellow-500/20 backdrop-blur-sm border border-yellow-500/30 rounded-full px-2 py-1">
+                        <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        <span className="text-yellow-400 text-xs font-medium">MAX</span>
+                      </div>
                     </div>
-                    <div className="text-gray-300 text-base sm:text-lg mb-2">Estimated Valuation</div>
+                  )}
+                  <div className="text-center">
+                    <div className="text-3xl sm:text-4xl font-bold text-blue-400 mb-2 sm:mb-3 flex items-center justify-center gap-2">
+                      ${result.estimated_valuation.toLocaleString()}
+                      {result.is_max_valuation && (
+                        <div className="flex items-center gap-1">
+                          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-gray-300 text-base sm:text-lg mb-2">
+                      {result.is_max_valuation ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <span>Estimated Valuation</span>
+                          <div className="flex items-center gap-1 text-yellow-400 text-sm">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span className="font-medium">Premium Tier</span>
+                          </div>
+                        </div>
+                      ) : (
+                        'Estimated Valuation'
+                      )}
+                    </div>
                     <div className="text-xs sm:text-sm text-gray-400">
-                      Range: ${result.valuation_range.low.toLocaleString()} - ${result.valuation_range.high.toLocaleString()}
+                      {result.is_max_valuation ? (
+                        <div className="space-y-1">
+                          <div>Exceptional potential reached</div>
+                        </div>
+                      ) : (
+                        <>Range: ${result.valuation_range.low.toLocaleString()} - ${result.valuation_range.high.toLocaleString()}</>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -423,103 +585,102 @@ export default function Home() {
                     <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
-                    Breakdown
+                    Valuation Calculation
                   </h3>
-                  <div className="space-y-3 sm:space-y-4 text-xs sm:text-sm">
-                    <div className="flex justify-between items-center p-2 sm:p-3 bg-gray-700/30 rounded-xl">
-                      <span className="text-gray-400 flex items-center gap-2">
-                        <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                        Revenue component:
-                      </span>
-                      <span className="text-white font-medium">${result.breakdown.revenue.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center p-2 sm:p-3 bg-gray-700/30 rounded-xl">
-                      <span className="text-gray-400 flex items-center gap-2">
-                        <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                        Traffic component:
-                      </span>
-                      <span className="text-white font-medium">${result.breakdown.traffic.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center p-2 sm:p-3 bg-gray-700/30 rounded-xl">
-                      <span className="text-gray-400 flex items-center gap-2">
-                        <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                        Community component:
-                      </span>
-                      <span className="text-white font-medium">${result.breakdown.community.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center p-2 sm:p-3 bg-gray-700/30 rounded-xl border-t border-gray-600/50">
-                      <span className="text-gray-400 flex items-center gap-2">
-                        <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                        Category multiplier:
-                      </span>
-                      <span className="text-white font-medium">{result.breakdown.multiplier}x</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Methodology */}
-                <div className="bg-gray-800/50 border border-gray-700/50 rounded-2xl p-4 sm:p-6 backdrop-blur-sm">
-                  <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    How Your Score Was Calculated
-                  </h3>
-                  <div className="text-xs sm:text-sm text-gray-400 space-y-3 sm:space-y-4">
-                    <div className="bg-gradient-to-r from-blue-900/30 to-blue-800/20 p-3 sm:p-4 rounded-xl border border-blue-700/30">
-                      <p className="text-blue-400 font-medium mb-2">Pre-Revenue Focus</p>
-                      <p>Since your startup is pre-revenue, we evaluate potential based on traction metrics that typically lead to monetization success.</p>
-                    </div>
+                  <div className="space-y-3 text-xs sm:text-sm">
                     
-                    <div className="space-y-3">
-                      <p className="text-white font-medium">Valuation Components:</p>
-                      <div className="grid gap-3">
-                        <div className="flex items-start gap-3">
-                          <div className="w-2 h-2 bg-green-400 rounded-full mt-1 flex-shrink-0"></div>
-                          <div>
-                            <span className="text-green-400 font-medium">Projected Revenue:</span>
-                            <span className="text-gray-400 ml-1">Estimated at $0.05 MRR per user (industry average conversion)</span>
-                          </div>
+                    {/* Base Components */}
+                    <div className="bg-gray-700/20 rounded-xl p-3 sm:p-4">
+                      <div className="text-gray-300 font-medium mb-3">Base Components:</div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-400 flex items-center gap-2">
+                            <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                            User base value (tiered pricing):
+                          </span>
+                          <span className="text-white font-medium">${result.breakdown.community.toLocaleString()}</span>
                         </div>
-                        <div className="flex items-start gap-3">
-                          <div className="w-2 h-2 bg-blue-400 rounded-full mt-1 flex-shrink-0"></div>
-                          <div>
-                            <span className="text-blue-400 font-medium">Traffic Value:</span>
-                            <span className="text-gray-400 ml-1">$0.10 per monthly visitor (based on acquisition cost benchmarks)</span>
-                          </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-400 flex items-center gap-2">
+                            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                            Traffic value (tiered pricing):
+                          </span>
+                          <span className="text-white font-medium">${result.breakdown.traffic.toLocaleString()}</span>
                         </div>
-                        <div className="flex items-start gap-3">
-                          <div className="w-2 h-2 bg-purple-400 rounded-full mt-1 flex-shrink-0"></div>
-                          <div>
-                            <span className="text-purple-400 font-medium">Community Value:</span>
-                            <span className="text-gray-400 ml-1">$5.00 per user (engagement and retention potential)</span>
-                          </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-400 flex items-center gap-2">
+                            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                            Revenue potential (MRR × 12 × 1.8):
+                          </span>
+                          <span className="text-white font-medium">${result.breakdown.revenue.toLocaleString()}</span>
                         </div>
-                        <div className="flex items-start gap-3">
-                          <div className="w-2 h-2 bg-yellow-400 rounded-full mt-1 flex-shrink-0"></div>
-                          <div>
-                            <span className="text-yellow-400 font-medium">Market Multiple:</span>
-                            <span className="text-gray-400 ml-1">Applied based on category performance from </span>
-                            <a href="https://littleexits.com" className="text-blue-400 hover:text-blue-300 underline transition-colors" target="_blank" rel="noopener noreferrer">Little Exits</a>
-                            <span className="text-gray-400"> data</span>
-                          </div>
+                      </div>
+                      <div className="border-t border-gray-600/50 mt-3 pt-3">
+                        <div className="flex justify-between items-center font-medium">
+                          <span className="text-gray-300">Base Subtotal:</span>
+                          <span className="text-white">${(result.breakdown.revenue + result.breakdown.traffic + result.breakdown.community).toLocaleString()}</span>
                         </div>
                       </div>
                     </div>
-                    
-                    <div className="bg-gradient-to-r from-purple-900/30 to-purple-800/20 p-3 sm:p-4 rounded-xl border border-purple-700/30">
-                      <p className="text-purple-400 font-medium mb-2">Category Analysis</p>
-                      <p>Based on real marketplace sales data from <a href="https://littleexits.com" target="_blank" rel="noopener noreferrer" className="text-purple-300 hover:text-purple-200 underline">Little Exits</a>. Category multipliers reflect actual sale prices and success rates from completed transactions. Specific categories often command higher premiums than broad ones.</p>
+
+                    {/* Multipliers */}
+                    <div className="bg-yellow-900/20 rounded-xl p-3 sm:p-4 border border-yellow-700/30">
+                      <div className="text-yellow-400 font-medium mb-3">Applied Adjustments:</div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-400 flex items-center gap-2">
+                            <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                            Combined multiplier:
+                          </span>
+                          <span className="text-yellow-300 font-medium">{result.breakdown.multiplier}x</span>
+                        </div>
+                        <div className="text-xs text-gray-500 space-y-1">
+                          <div>• Category performance multiplier</div>
+                          {formData.categories.length > 1 && (
+                            <div>• {formData.categories.length === 2 ? '+5%' : '+10%'} diversification bonus</div>
+                          )}
+                          <div>• Quality adjustments (tagline, efficiency)</div>
+                          <div>• Reality checks and penalty applications</div>
+                        </div>
+                      </div>
                     </div>
-                    
-                    <div className="bg-gradient-to-r from-yellow-900/30 to-yellow-800/20 p-3 sm:p-4 rounded-xl border border-yellow-700/30">
-                      <p className="text-yellow-400 font-medium mb-2">Success Score Logic</p>
-                      <p>Combines user growth rate, traffic quality, market timing, and sustainability factors. Higher scores indicate stronger fundamentals for eventual monetization.</p>
+
+                    {/* Final Calculation */}
+                    <div className="bg-blue-900/20 rounded-xl p-3 sm:p-4 border border-blue-700/30">
+                      <div className="flex justify-between items-center text-base font-semibold">
+                        <span className="text-blue-400 flex items-center gap-2">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                          </svg>
+                          Final Valuation:
+                        </span>
+                        <span className="text-blue-300">${result.estimated_valuation.toLocaleString()}</span>
+                      </div>
+                      <div className="text-xs text-gray-400 mt-2">
+                        ${(result.breakdown.revenue + result.breakdown.traffic + result.breakdown.community).toLocaleString()} × {result.breakdown.multiplier} = ${result.estimated_valuation.toLocaleString()}
+                      </div>
                     </div>
-                    
-                    <div className="bg-gradient-to-r from-indigo-900/30 to-indigo-800/20 p-3 sm:p-4 rounded-xl border border-indigo-700/30">
-                      <p className="text-indigo-400 font-medium mb-2">Tagline Analysis</p>
-                      <p>Your one-sentence tagline is analyzed by AI to assess market positioning, value proposition clarity, and business model viability. The concise format helps with better AI analysis and cleaner URL sharing.</p>
+
+                    {/* Notes */}
+                    <div className="bg-gray-700/20 rounded-lg p-3 border border-gray-600/30">
+                      <div className="text-xs text-gray-400 space-y-1">
+                        <div className="flex items-start gap-2">
+                          <div className="w-1 h-1 bg-gray-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                          <span>User and traffic values use tiered pricing based on performance benchmarks</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <div className="w-1 h-1 bg-gray-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                          <span>Combined multiplier includes category, quality, efficiency, and penalty adjustments</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <div className="w-1 h-1 bg-gray-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                          <span>Reality checks may cap valuations for poor-performing startups</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <div className="w-1 h-1 bg-gray-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                          <span>Maximum valuation cap: $100,000 for pre-revenue startups</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -686,6 +847,117 @@ export default function Home() {
             Data sourced from <a href="https://app.littleexits.com" className="text-blue-400 hover:text-blue-300 underline transition-colors" target="_blank" rel="noopener noreferrer">Little Exits</a> marketplace
           </p>
         </footer>
+
+        {/* Success Score Modal */}
+        {showScoreModal && (
+          <div 
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowScoreModal(false);
+              }
+            }}
+          >
+            <div className="bg-gray-900/95 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 sm:p-8 max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl sm:text-2xl font-semibold text-white flex items-center gap-2">
+                  <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  How Your Success Score Was Calculated
+                </h3>
+                <button
+                  onClick={() => setShowScoreModal(false)}
+                  className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800/50"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="text-sm text-gray-300 space-y-4">
+                <div className="bg-gradient-to-r from-blue-900/30 to-blue-800/20 p-4 rounded-xl border border-blue-700/30">
+                  <p className="text-blue-400 font-medium mb-2">Pre-Revenue Focus</p>
+                  <p>Since your startup is pre-revenue, we evaluate potential based on traction metrics that typically lead to monetization success.</p>
+                </div>
+                
+                <div className="bg-gradient-to-r from-yellow-900/30 to-yellow-800/20 p-4 rounded-xl border border-yellow-700/30">
+                  <p className="text-yellow-400 font-medium mb-3">Rigorous Success Score Logic</p>
+                  <p className="mb-3">Our algorithm is intentionally harsh and realistic. It evaluates:</p>
+                  <div className="space-y-2 ml-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                      <span><strong>Traction (30%):</strong> User base and monthly traffic metrics</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                      <span><strong>Product Quality (25%):</strong> Tagline clarity and value proposition</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                      <span><strong>Market Category (20%):</strong> Category performance and diversification</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                      <span><strong>Cost Efficiency (15%):</strong> Monthly costs vs. traction metrics</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                      <span><strong>Growth Potential (10%):</strong> Market opportunity and scalability</span>
+                    </div>
+                  </div>
+                  <p className="mt-3">Most startups score 20-70, with only exceptional startups with strong traction and clear value propositions scoring 80+.</p>
+                </div>
+
+                <div className="bg-gradient-to-r from-green-900/30 to-green-800/20 p-4 rounded-xl border border-green-700/30">
+                  <p className="text-green-400 font-medium mb-2">Benchmarks from Little Exits Data</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <p className="font-medium text-white mb-1">Market Average Performance:</p>
+                      <ul className="text-sm space-y-1">
+                        <li>• 2,500+ users</li>
+                        <li>• 8,000+ monthly visitors</li>
+                        <li>• Clear value proposition</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="font-medium text-white mb-1">Premium Tier (80+ score):</p>
+                      <ul className="text-sm space-y-1">
+                        <li>• 5,000+ users</li>
+                        <li>• 20,000+ monthly visitors</li>
+                        <li>• Strong market category</li>
+                        <li>• Efficient cost structure</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-r from-purple-900/30 to-purple-800/20 p-4 rounded-xl border border-purple-700/30">
+                  <p className="text-purple-400 font-medium mb-2">Category Analysis</p>
+                  <p>Based on real marketplace sales data from <a href="https://littleexits.com" target="_blank" rel="noopener noreferrer" className="text-purple-300 hover:text-purple-200 underline">Little Exits</a>. Category multipliers reflect actual sale prices and success rates from completed transactions. Selecting multiple complementary categories can provide a small diversification bonus.</p>
+                </div>
+                
+                <div className="bg-gradient-to-r from-indigo-900/30 to-indigo-800/20 p-4 rounded-xl border border-indigo-700/30">
+                  <p className="text-indigo-400 font-medium mb-2">Tagline Analysis</p>
+                  <p>Your one-sentence tagline is analyzed by AI to assess market positioning, value proposition clarity, and business model viability. The concise format helps with better AI analysis and cleaner URL sharing.</p>
+                </div>
+
+                <div className="bg-gradient-to-r from-red-900/30 to-red-800/20 p-4 rounded-xl border border-red-700/30">
+                  <p className="text-red-400 font-medium mb-2">Critical Failure Penalties</p>
+                  <p>The algorithm applies harsh penalties for fundamental issues:</p>
+                  <ul className="mt-2 space-y-1 text-sm ml-4">
+                    <li>• No meaningful tagline (-20 points)</li>
+                    <li>• Almost no traction (-15 points)</li>
+                    <li>• No clear value proposition (-15 points)</li>
+                    <li>• Poor market category fit (-8 points)</li>
+                    <li>• Terrible unit economics (-12 points)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
     </>

@@ -50,25 +50,27 @@ function getDefaultMarketData(): MarketData {
     totalProjects: 0,
     soldProjects: 0,
     categoryMultipliers: {
-      'SaaS': 1.5,
-      'AI': 1.6,
-      'E-commerce': 1.4,
-      'Webflow': 1.4,
-      'Chrome Extension': 1.3,
-      'API': 1.3,
-      'Automation': 1.3,
-      'Marketplace': 1.2,
-      'Newsletter': 1.2,
-      'Web3': 1.2,
-      'Community': 1.0,
-      'Blog': 0.9,
+      'AI': 1.8,                    // Hot market, high demand
+      'SaaS': 1.6,                  // Strong market performance
+      'Automation': 1.5,            // High value, efficiency focused
+      'API': 1.4,                   // Developer tools, good demand
+      'E-commerce': 1.3,            // Established market
+      'Chrome Extension': 1.3,      // Niche but valuable
+      'Webflow': 1.2,               // Design/development tools
+      'Mobile App': 1.1,            // Competitive but viable
+      'Marketplace': 1.0,           // Average performance
+      'Newsletter': 0.9,            // Declining market interest
+      'Web3': 0.8,                  // Volatile, uncertain market
+      'Community': 0.7,             // Hard to monetize
+      'Blog': 0.6,                  // Difficult market, low multiples
+      'Social Media': 0.5,          // Very competitive, low success
     },
     avgRevenueMultiple: 2.5,
     avgProfitMultiple: 3.0,
     avgTrafficValue: 0.1,
     avgCommunityValue: 5,
     successPatterns: {
-      topCategories: ['SaaS', 'AI', 'E-commerce'],
+      topCategories: ['AI', 'SaaS', 'Automation'],
       avgSoldPrice: 15000,
       avgUserBase: 2500,
       avgTraffic: 8000
@@ -124,14 +126,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const successScore = await getSuccessScoreFromChatGPT(formData);
     
     // Get estimated valuation using our Little Exits data
-    const estimatedValuation = await getEstimatedValuation(formData);
+    const valuationResult = await getEstimatedValuation(formData);
 
     res.status(200).json({ 
       successScore,
-      estimatedValuation,
+      estimatedValuation: valuationResult.valuation,
+      isMaxValuation: valuationResult.isMaxValuation,
       valuationRange: {
-        low: Math.round(estimatedValuation * 0.7),
-        high: Math.round(estimatedValuation * 1.3)
+        low: Math.round(valuationResult.valuation * 0.7),
+        high: Math.round(valuationResult.valuation * 1.3)
       }
     });
   } catch (error) {
@@ -140,83 +143,177 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 }
 
-async function getEstimatedValuation(formData: any): Promise<number> {
+async function getEstimatedValuation(formData: any): Promise<{valuation: number, isMaxValuation: boolean}> {
   try {
     // Load current market data
     const marketData = loadMarketData();
     
-    // Use market-based valuation metrics
-    const metrics: ValuationMetrics = {
-      avgRevenueMultiple: marketData.avgRevenueMultiple,
-      avgProfitMultiple: marketData.avgProfitMultiple,
-      avgTrafficValue: marketData.avgTrafficValue,
-      avgCommunityValue: marketData.avgCommunityValue,
-      categoryMultipliers: marketData.categoryMultipliers
-    };
-
     // Extract data from form
     const userBase = parseInt(formData.user_base || '0', 10);
     const monthlyTraffic = parseInt(formData.traffic || '0', 10);
     const monthlyCost = parseInt(formData.monthly_cost || '0', 10);
     const categories = formData.categories || [];
+    const tagline = formData.tagline || '';
     
-    // Estimate MRR based on user base (rough estimate for pre-revenue)
-    const estimatedMRR = Math.max(userBase * 0.05, 0);
-    
+    // Base valuation calculation
     let estimatedValue = 0;
-    let valuationMethods = 0;
-
-    // Method 1: Revenue-based valuation (estimated MRR * 12 * multiple)
+    
+    // 1. User base valuation (more conservative and realistic)
+    if (userBase > 0) {
+      let userValue = 0;
+      if (userBase >= 10000) userValue = userBase * 8;      // Premium for large user base
+      else if (userBase >= 5000) userValue = userBase * 6;   // Good user base
+      else if (userBase >= 2500) userValue = userBase * 5;   // Market average
+      else if (userBase >= 1000) userValue = userBase * 3;   // Below average
+      else if (userBase >= 500) userValue = userBase * 2;    // Minimal value
+      else userValue = userBase * 1;                         // Very low value
+      
+      estimatedValue += userValue;
+    }
+    
+    // 2. Traffic valuation (more realistic traffic value)
+    if (monthlyTraffic > 0) {
+      let trafficValue = 0;
+      if (monthlyTraffic >= 100000) trafficValue = monthlyTraffic * 0.15;    // High-quality traffic
+      else if (monthlyTraffic >= 50000) trafficValue = monthlyTraffic * 0.12; // Good traffic
+      else if (monthlyTraffic >= 20000) trafficValue = monthlyTraffic * 0.10; // Market average
+      else if (monthlyTraffic >= 8000) trafficValue = monthlyTraffic * 0.08;  // Below average
+      else if (monthlyTraffic >= 3000) trafficValue = monthlyTraffic * 0.05;  // Low value
+      else trafficValue = monthlyTraffic * 0.02;                              // Very low value
+      
+      estimatedValue += trafficValue;
+    }
+    
+    // 3. Revenue potential (more conservative for pre-revenue)
+    const estimatedMRR = Math.max(userBase * 0.03, 0); // Lower conversion assumption
     if (estimatedMRR > 0) {
       const annualRevenue = estimatedMRR * 12;
-      const revenueValue = annualRevenue * metrics.avgRevenueMultiple;
+      const revenueValue = annualRevenue * 1.8; // Lower multiple for pre-revenue
       estimatedValue += revenueValue;
-      valuationMethods++;
     }
-
-    // Method 2: Traffic-based valuation
-    if (monthlyTraffic > 0) {
-      const trafficValue = monthlyTraffic * metrics.avgTrafficValue;
-      estimatedValue += trafficValue;
-      valuationMethods++;
-    }
-
-    // Method 3: Community-based valuation
-    if (userBase > 0) {
-      const communityValue = userBase * metrics.avgCommunityValue;
-      estimatedValue += communityValue;
-      valuationMethods++;
-    }
-
-    // Average the different valuation methods
-    if (valuationMethods > 0) {
-      estimatedValue = estimatedValue / valuationMethods;
-    }
-
-    // Apply market performance-based category multiplier
-    let categoryMultiplier = 1;
+    
+    // 4. Apply category multiplier based on actual market performance
+    let categoryMultiplier = 1.0;
     if (categories.length > 0) {
       const categoryValues = categories.map((cat: string) => getCategoryMultiplier(cat, marketData));
       categoryMultiplier = categoryValues.reduce((a: number, b: number) => a + b, 0) / categoryValues.length;
     }
     estimatedValue = estimatedValue * categoryMultiplier;
-
-    // Minimum valuation for any project with some data
-    if (estimatedValue < 1000 && (estimatedMRR > 0 || monthlyTraffic > 1000 || userBase > 100)) {
-      estimatedValue = 1000;
+    
+    // 5. Apply quality adjustments based on tagline and efficiency (less harsh)
+    const qualityMultiplier = calculateBalancedQualityMultiplier(tagline, userBase, monthlyTraffic, monthlyCost);
+    estimatedValue = estimatedValue * qualityMultiplier;
+    
+    // 6. More balanced reality checks instead of harsh penalties
+    if (userBase < 10 && monthlyTraffic < 100 && (!tagline || tagline.length < 10)) {
+      estimatedValue = Math.min(estimatedValue, 200); // Low but not zero valuation
+    } else if (userBase < 50 && monthlyTraffic < 500) {
+      estimatedValue = Math.min(estimatedValue, 1000); // Cap very low traction startups
+    } else if (userBase < 200 && monthlyTraffic < 2000) {
+      estimatedValue = Math.min(estimatedValue, 5000); // Cap low traction startups
+    }
+    
+    // More balanced cost penalties
+    if (monthlyCost > 1000 && userBase < 50) {
+      estimatedValue = estimatedValue * 0.6; // 40% penalty instead of 70%
+    } else if (monthlyCost > 500 && userBase < 25) {
+      estimatedValue = estimatedValue * 0.4; // 60% penalty instead of 90%
+    }
+    
+    // Less harsh tagline penalties
+    if (!tagline || tagline.length < 5) {
+      estimatedValue = estimatedValue * 0.5; // 50% penalty instead of 80%
+    } else if (tagline.length < 15) {
+      estimatedValue = estimatedValue * 0.7; // 30% penalty instead of 50%
+    }
+    
+    // Check for test taglines but be less harsh
+    const taglineLower = tagline.toLowerCase();
+    const testIndicators = ['test', 'hello', 'asdf', '123', 'qwerty', 'sample', 'example'];
+    if (testIndicators.some(word => taglineLower.includes(word))) {
+      estimatedValue = Math.min(estimatedValue, 300); // Cap at $300 instead of $100
+    }
+    
+    // More generous minimum valuation
+    const hasAnyTraction = userBase >= 10 || monthlyTraffic >= 100;
+    const hasValidTagline = tagline && tagline.length >= 10 && !testIndicators.some(word => taglineLower.includes(word));
+    
+    if (estimatedValue < 500 && hasAnyTraction && hasValidTagline) {
+      estimatedValue = 500;
+    } else if (estimatedValue < 200 && (hasAnyTraction || hasValidTagline)) {
+      estimatedValue = 200;
+    } else if (estimatedValue < 50 && (tagline || userBase > 0 || monthlyTraffic > 0)) {
+      estimatedValue = 50; // Minimum for any meaningful attempt
     }
 
-    // Cap at reasonable maximum for pre-revenue
-    estimatedValue = Math.min(estimatedValue, 100000);
+    // Realistic maximum for pre-revenue startups
+    const maxValuation = 100000;
+    const isMaxValuation = estimatedValue >= maxValuation;
+    estimatedValue = Math.min(estimatedValue, maxValuation);
 
-    return Math.round(estimatedValue);
+    return {
+      valuation: Math.round(Math.max(0, estimatedValue)),
+      isMaxValuation: isMaxValuation
+    };
   } catch (error) {
     console.error('Error estimating valuation:', error);
-    // Return a basic estimate based on user base and traffic
+    // Return a very basic estimate
     const userBase = parseInt(formData.user_base || '0', 10);
     const monthlyTraffic = parseInt(formData.traffic || '0', 10);
-    return Math.max(userBase * 2 + monthlyTraffic * 0.05, 1000);
+    const basicValuation = Math.max(userBase * 1.5 + monthlyTraffic * 0.03, 500);
+    return {
+      valuation: Math.round(basicValuation),
+      isMaxValuation: false
+    };
   }
+}
+
+function calculateBalancedQualityMultiplier(tagline: string, userBase: number, monthlyTraffic: number, monthlyCost: number): number {
+  let multiplier = 1.0;
+  
+  // Less harsh tagline quality impact
+  if (!tagline || tagline.length < 5) {
+    multiplier *= 0.8; // Lighter penalty for poor/no tagline
+  } else {
+    const taglineLower = tagline.toLowerCase();
+    
+    // Bonus for strong value propositions
+    const strongWords = ['ai', 'automation', 'saas', 'platform', 'api', 'tool for'];
+    if (strongWords.some(word => taglineLower.includes(word))) {
+      multiplier *= 1.15; // Slightly lower bonus
+    }
+    
+    // Bonus for clear target market
+    const targetWords = ['businesses', 'developers', 'teams', 'companies'];
+    if (targetWords.some(word => taglineLower.includes(word))) {
+      multiplier *= 1.08; // Slightly lower bonus
+    }
+    
+    // Lighter penalty for vague taglines
+    const vagueWords = ['easy', 'simple', 'fast', 'best', 'revolutionary'];
+    if (vagueWords.some(word => taglineLower.includes(word))) {
+      multiplier *= 0.95; // Much lighter penalty
+    }
+  }
+  
+  // More balanced efficiency multiplier
+  if (monthlyCost > 0) {
+    const totalTraction = userBase + (monthlyTraffic / 10);
+    const efficiency = totalTraction / monthlyCost;
+    
+    if (efficiency > 10) multiplier *= 1.2;       // Lower bonus for very efficient
+    else if (efficiency > 5) multiplier *= 1.08;  // Lower bonus for good efficiency
+    else if (efficiency > 1) multiplier *= 1.0;   // Average efficiency (neutral)
+    else if (efficiency > 0.2) multiplier *= 0.9; // Lighter penalty for poor efficiency
+    else multiplier *= 0.7;                       // Less harsh penalty for very poor efficiency
+  }
+  
+  // Traction quality multiplier (less harsh)
+  const trafficToUserRatio = userBase > 0 ? monthlyTraffic / userBase : 0;
+  if (trafficToUserRatio > 10) multiplier *= 1.15; // Lower bonus for good traffic conversion
+  else if (trafficToUserRatio < 2 && userBase > 100) multiplier *= 0.95; // Lighter penalty for poor traffic generation
+  
+  return Math.max(0.5, Math.min(1.8, multiplier)); // Better range: 50% to 180%
 }
 
 async function getSuccessScoreFromChatGPT(formData: any) {
@@ -226,8 +323,8 @@ async function getSuccessScoreFromChatGPT(formData: any) {
     // Check for OpenAI API Key
     const openaiApiKey = process.env.OPENAI_API_KEY;
     if (!openaiApiKey) {
-      console.warn("OpenAI API key is not configured, using fallback score");
-      return calculateFallbackScore(formData);
+      console.warn("OpenAI API key is not configured, using market-based score");
+      return calculateMarketBasedScore(formData);
     }
 
     const payload = {
@@ -259,7 +356,7 @@ async function getSuccessScoreFromChatGPT(formData: any) {
   } catch (error) {
     console.error('Error getting AI score:', error);
     // Return a calculated score based on metrics if AI fails
-    return calculateFallbackScore(formData);
+    return calculateMarketBasedScore(formData);
   }
 }
 
@@ -272,7 +369,7 @@ function constructPrompt(formData: any): string {
 
   const categoriesFormatted = Array.isArray(categories) ? categories.join(', ') : categories;
 
-  return `You are an expert startup analyst trained on 500+ successful exits from Little Exits marketplace.
+  return `You are a balanced startup analyst trained on successful marketplace data. Your role is to provide realistic assessments that consider both potential and current traction.
 
 Analyze this pre-revenue startup:
 
@@ -282,27 +379,48 @@ Monthly Traffic: ${monthlyTraffic} unique visitors
 Categories: ${categoriesFormatted}
 Monthly Costs: $${monthlyCost}
 
-Based on Little Exits data (avg revenue multiples 2.5x, traffic value $0.10/visitor, community value $5/user), evaluate:
+MARKET BENCHMARKS:
+- Early success indicators: 100+ users OR 1,000+ monthly traffic
+- Market average: 2,500 users, 8,000 monthly traffic
+- Strong performance: 5,000+ users, 20,000+ traffic
+- Category multipliers: AI/SaaS (high growth), E-commerce (established), Community (relationship-based)
 
-1. Market demand and business clarity from tagline
-2. User traction vs growth potential
-3. Revenue potential and monetization clarity
-4. Category performance and market fit
-5. Cost structure efficiency
-6. Tagline quality and value proposition clarity
+BALANCED EVALUATION FRAMEWORK:
 
-The tagline should clearly communicate the startup's value proposition in one sentence. Analyze:
-- Market size and opportunity
-- Competitive differentiation
-- Monetization potential
-- Technical feasibility
-- Target market clarity
+1. CURRENT TRACTION (40% weight):
+   - Strong traction (5,000+ users OR 20,000+ traffic): 75-90
+   - Good traction (1,000+ users OR 5,000+ traffic): 60-75
+   - Early traction (100+ users OR 1,000+ traffic): 45-60
+   - Minimal traction (10+ users OR 100+ traffic): 30-45
+   - Very early stage (some data present): 20-35
+   - No meaningful data: 10-25
 
-Provide a success score from 0-100 where:
-- 0-30: Low likelihood of successful exit
-- 31-60: Moderate potential with improvements needed
-- 61-80: Strong potential for acquisition
-- 81-100: Exceptional startup with high exit probability
+2. PRODUCT QUALITY & MARKET FIT (30% weight):
+   - Clear value proposition with specific target market: +15-20
+   - Identifiable problem/solution fit: +10-15
+   - Basic concept with potential: +5-10
+   - Vague or unclear positioning: +0-5
+
+3. MARKET OPPORTUNITY (20% weight):
+   - High-growth categories (AI, SaaS, Automation): +15-20
+   - Stable markets (E-commerce, Tools): +10-15
+   - Competitive markets: +5-10
+   - Declining markets: +0-5
+
+4. OPERATIONAL EFFICIENCY (10% weight):
+   - Sustainable cost structure: +5-10
+   - High costs but justified by growth: +0-5
+   - Concerning cost/traction ratio: -5-0
+
+Score Distribution Philosophy:
+- 80-100: Exceptional startups with strong traction and clear market opportunity
+- 60-79: Good startups showing meaningful progress and potential
+- 40-59: Early-stage startups with valid concepts and some indicators
+- 25-39: Very early startups with basic validation or potential
+- 10-24: Startups needing significant development or pivot
+- 1-9: Incomplete submissions or very preliminary concepts
+
+Consider the full context - early-stage startups deserve credit for taking first steps and showing any meaningful progress. Balance rigor with recognition of market realities.
 
 Return your response in this exact format: "Score: [number]"`;
 }
@@ -313,58 +431,179 @@ function interpretResponse(responseText: string) {
   return match ? parseInt(match[1], 10) : 50;
 }
 
-function calculateFallbackScore(formData: any): number {
-  let score = 50; // Base score
-  
+function calculateMarketBasedScore(formData: any): number {
   const userBase = parseInt(formData.user_base || '0', 10);
   const monthlyTraffic = parseInt(formData.traffic || '0', 10);
   const monthlyCost = parseInt(formData.monthly_cost || '0', 10);
   const categories = formData.categories || [];
+  const tagline = formData.tagline || '';
   
-  // Load market data for category scoring
+  // Load market data for benchmarking
   const marketData = loadMarketData();
   
-  // User traction scoring
-  if (userBase > 5000) score += 15;
-  else if (userBase > 1000) score += 10;
-  else if (userBase > 100) score += 5;
+  // Start with more balanced scoring system (1-100 range)
+  let scores = {
+    traction: 0,        // 0-40 points based on user base and traffic
+    product: 0,         // 0-30 points based on tagline quality and market fit
+    category: 0,        // 0-20 points based on category performance
+    efficiency: 0,      // 0-10 points based on cost structure
+  };
   
-  // Traffic scoring
-  if (monthlyTraffic > 50000) score += 15;
-  else if (monthlyTraffic > 10000) score += 10;
-  else if (monthlyTraffic > 1000) score += 5;
+  // 1. TRACTION SCORING (0-40 points) - Most important for exits
+  // More generous scoring that recognizes early-stage progress
+  const userScore = calculateBalancedTractionScore(userBase, [
+    { threshold: 10000, points: 20 },   // Exceptional (top 5%)
+    { threshold: 5000, points: 18 },    // Excellent (top 10%)
+    { threshold: 2500, points: 16 },    // Good (market average)
+    { threshold: 1000, points: 14 },    // Above early stage
+    { threshold: 500, points: 12 },     // Early traction
+    { threshold: 100, points: 10 },     // Meaningful start
+    { threshold: 50, points: 8 },       // Basic validation
+    { threshold: 10, points: 6 },       // Some progress
+    { threshold: 1, points: 4 },        // Started
+    { threshold: 0, points: 2 }         // Minimum base score
+  ]);
   
-  // Market performance-based category scoring
-  for (const category of categories) {
-    const multiplier = getCategoryMultiplier(category, marketData);
-    if (multiplier >= 1.4) score += 12; // High performers
-    else if (multiplier >= 1.2) score += 8; // Strong performers
-    else if (multiplier >= 1.0) score += 4; // Average performers
-    // Lower performers get no bonus
+  const trafficScore = calculateBalancedTractionScore(monthlyTraffic, [
+    { threshold: 50000, points: 20 },   // Exceptional traffic
+    { threshold: 20000, points: 18 },   // Excellent traffic
+    { threshold: 8000, points: 16 },    // Good traffic (market average)
+    { threshold: 3000, points: 14 },    // Above early stage
+    { threshold: 1000, points: 12 },    // Early traction
+    { threshold: 500, points: 10 },     // Meaningful start
+    { threshold: 100, points: 8 },      // Basic validation
+    { threshold: 50, points: 6 },       // Some progress
+    { threshold: 10, points: 4 },       // Started
+    { threshold: 0, points: 2 }         // Minimum base score
+  ]);
+  
+  scores.traction = userScore + trafficScore;
+  
+  // 2. PRODUCT QUALITY SCORING (0-30 points) - More generous
+  scores.product = evaluateBalancedProductQuality(tagline);
+  
+  // 3. CATEGORY PERFORMANCE SCORING (0-20 points) - Same logic but better baseline
+  scores.category = evaluateBalancedCategoryPerformance(categories, marketData);
+  
+  // 4. EFFICIENCY SCORING (0-10 points) - Less harsh penalties
+  scores.efficiency = evaluateBalancedEfficiency(userBase, monthlyTraffic, monthlyCost);
+  
+  // Calculate final score with balanced approach
+  const baseScore = scores.traction + scores.product + scores.category + scores.efficiency;
+  
+  // Apply balanced adjustments instead of harsh penalties
+  let finalScore = baseScore;
+  
+  // Minor adjustments for data quality issues (not harsh penalties)
+  if (!tagline || tagline.length < 5) finalScore -= 5; // Minor penalty for no tagline
+  if (userBase === 0 && monthlyTraffic === 0) finalScore -= 8; // Penalty for absolutely no traction
+  
+  // Check for test data but be less harsh
+  const taglineLower = tagline.toLowerCase();
+  const testIndicators = ['test', 'hello', 'asdf', '123', 'qwerty', 'sample', 'example'];
+  if (testIndicators.some(word => taglineLower.includes(word))) {
+    finalScore = Math.min(finalScore, 15); // Cap at 15 for test data, not 10
   }
   
-  // Tagline quality scoring
-  if (formData.tagline && formData.tagline.length > 20) {
-    const tagline = formData.tagline.toLowerCase();
-    // Look for value proposition indicators
-    const valueWords = ['ai', 'automation', 'platform', 'solution', 'tool', 'service', 'for', 'helps', 'enables'];
-    const hasValueProposition = valueWords.some(word => tagline.includes(word));
-    if (hasValueProposition) score += 8;
-    
-    // Bonus for clear target market
-    const targetMarketWords = ['businesses', 'developers', 'teams', 'companies', 'users'];
-    const hasTargetMarket = targetMarketWords.some(word => tagline.includes(word));
-    if (hasTargetMarket) score += 5;
+  // Ensure minimum score of 1 for any submission with some effort
+  if (tagline && tagline.length > 3) {
+    finalScore = Math.max(finalScore, 5);
+  } else if (userBase > 0 || monthlyTraffic > 0) {
+    finalScore = Math.max(finalScore, 3);
+  } else {
+    finalScore = Math.max(finalScore, 1); // Always minimum 1
+  }
+
+  return Math.min(100, Math.max(1, Math.round(finalScore))); // Ensure 1-100 range
+}
+
+function calculateBalancedTractionScore(value: number, thresholds: Array<{threshold: number, points: number}>): number {
+  for (const tier of thresholds) {
+    if (value >= tier.threshold) {
+      return tier.points;
+    }
+  }
+  return 0;
+}
+
+function evaluateBalancedProductQuality(tagline: string): number {
+  if (!tagline || tagline.length < 3) return 2; // Minimum score instead of 0
+  
+  // Check for test/nonsense data but be more forgiving
+  const taglineLower = tagline.toLowerCase();
+  const testIndicators = ['test', 'hello', 'asdf', '123', 'qwerty', 'sample', 'example'];
+  if (testIndicators.some(word => taglineLower.includes(word))) {
+    return 5; // Give some credit even for test data
   }
   
-  // Cost efficiency
-  if (monthlyCost > 0) {
-    const userCostRatio = userBase / monthlyCost;
-    if (userCostRatio > 5) score += 8;
-    else if (userCostRatio > 2) score += 4;
+  let score = 8; // Better base score for having any meaningful tagline
+  
+  // Value proposition clarity (0-10 points)
+  const valueWords = ['helps', 'enables', 'automates', 'simplifies', 'improves', 'optimizes', 'manages', 'connects', 'creates', 'builds'];
+  if (valueWords.some(word => taglineLower.includes(word))) score += 5;
+  
+  const solutionWords = ['platform', 'tool', 'solution', 'service', 'system', 'app', 'software'];
+  if (solutionWords.some(word => taglineLower.includes(word))) score += 3;
+  
+  const modernTechWords = ['ai', 'ml', 'automation', 'api', 'saas', 'cloud', 'dashboard'];
+  if (modernTechWords.some(word => taglineLower.includes(word))) score += 3;
+  
+  // Target market clarity (0-6 points)
+  const targetMarkets = ['businesses', 'companies', 'teams', 'developers', 'creators', 'entrepreneurs', 'professionals'];
+  if (targetMarkets.some(word => taglineLower.includes(word))) score += 4;
+  
+  const specificMarkets = ['e-commerce', 'saas', 'startups', 'small business', 'enterprise'];
+  if (specificMarkets.some(word => taglineLower.includes(word))) score += 2;
+  
+  // Length and structure bonuses
+  if (tagline.length > 15 && tagline.length < 100) score += 3; // Good length
+  if (tagline.split(' ').length >= 4) score += 2; // Sufficient detail
+  
+  // Minor penalties for very poor quality (reduced)
+  if (tagline.split(' ').length < 3) score -= 2; // Too short
+  if (tagline.length < 10) score -= 1; // Very short
+  
+  return Math.min(30, Math.max(2, score)); // Ensure 2-30 range
+}
+
+function evaluateBalancedCategoryPerformance(categories: string[], marketData: MarketData): number {
+  if (categories.length === 0) return 8; // Better neutral score for no category
+  
+  const multipliers = categories.map(category => getCategoryMultiplier(category, marketData));
+  
+  let finalMultiplier: number;
+  if (categories.length === 1) {
+    finalMultiplier = multipliers[0];
+  } else if (categories.length === 2) {
+    finalMultiplier = (multipliers.reduce((a, b) => a + b, 0) / multipliers.length) * 1.05;
+  } else {
+    finalMultiplier = (multipliers.reduce((a, b) => a + b, 0) / multipliers.length) * 1.1;
   }
   
-  return Math.min(100, Math.max(0, score));
+  // Convert multiplier to score (2-20 points) with better baseline
+  if (finalMultiplier >= 1.6) return 20;      // Top performers (AI, SaaS)
+  else if (finalMultiplier >= 1.4) return 18; // Strong performers  
+  else if (finalMultiplier >= 1.2) return 16; // Above average
+  else if (finalMultiplier >= 1.0) return 12; // Average (better baseline)
+  else if (finalMultiplier >= 0.8) return 10; // Below average
+  else if (finalMultiplier >= 0.6) return 8;  // Poor performers
+  else return 6;                               // Very poor (but not 0)
+}
+
+function evaluateBalancedEfficiency(userBase: number, monthlyTraffic: number, monthlyCost: number): number {
+  if (monthlyCost <= 0) return 8; // Good if no costs (better baseline)
+  if (userBase <= 0 && monthlyTraffic <= 0) return 2; // Some points even with no traction
+  
+  const totalTraction = userBase + (monthlyTraffic / 10);
+  const efficiency = totalTraction / monthlyCost;
+  
+  // More generous efficiency scoring
+  if (efficiency > 10) return 10;       // Excellent efficiency
+  else if (efficiency > 5) return 8;    // Good efficiency  
+  else if (efficiency > 2) return 6;    // Average efficiency
+  else if (efficiency > 0.5) return 4;  // Below average
+  else if (efficiency > 0.1) return 3;  // Poor efficiency
+  else return 2;                        // Very poor but not zero
 }
 
 
