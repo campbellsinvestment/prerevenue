@@ -43,6 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       };
     }
 
+    // Only return safe, aggregated data - NO detailed project info
     res.status(200).json({
       topPerformers: marketData.topPerformers,
       lastUpdated: marketData.lastUpdated || new Date().toISOString()

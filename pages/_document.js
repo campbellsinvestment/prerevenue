@@ -5,7 +5,6 @@ class MyDocument extends Document {
     return (
       <Html lang="en">
       <Head>
-        <title>Pre-Revenue | Free Startup Evaluation Tool - Powered by Little Exits</title>
         <link rel='icon' href='/Little Exits Icon Dark.png' />
         <meta
           name="description"

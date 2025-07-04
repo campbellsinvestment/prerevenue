@@ -46,22 +46,38 @@ const MARKET_DATA_PATH = path.join(process.cwd(), 'data', 'market-analysis.json'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
-    // Return current market data
+    // Return current market data (PUBLIC - only aggregated data)
     try {
       const marketData = loadMarketData();
-      res.status(200).json(marketData);
+      // Only return safe, aggregated data - NO raw Little Exits data
+      const safeData = {
+        lastUpdated: marketData.lastUpdated,
+        categoryMultipliers: marketData.categoryMultipliers,
+        avgRevenueMultiple: marketData.avgRevenueMultiple,
+        avgProfitMultiple: marketData.avgProfitMultiple,
+        avgTrafficValue: marketData.avgTrafficValue,
+        avgCommunityValue: marketData.avgCommunityValue,
+        // Remove detailed project counts and specific data
+      };
+      res.status(200).json(safeData);
     } catch (error) {
       console.error('Error loading market data:', error);
       res.status(500).json({ error: 'Failed to load market data' });
     }
   } else if (req.method === 'POST') {
+    // PROTECTED: Only allow updates from authenticated sources
+    const authHeader = req.headers.authorization;
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET || 'missing-secret'}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
     // Update market data by analyzing Little Exits
     try {
       const marketData = await analyzeMarketData();
       saveMarketData(marketData);
       res.status(200).json({ 
         message: 'Market data updated successfully',
-        data: marketData 
+        // Don't return sensitive data
       });
     } catch (error) {
       console.error('Error updating market data:', error);

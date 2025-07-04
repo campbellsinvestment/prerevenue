@@ -1,5 +1,6 @@
 import React, { useState, FormEvent, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 import Image from 'next/image';
 
 interface EvaluationResult {
@@ -164,7 +165,11 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-gray-100 font-mono">
+    <>
+      <Head>
+        <title>Pre-Revenue | Free Startup Evaluation Tool - Powered by Little Exits</title>
+      </Head>
+      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-gray-100 font-mono">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
         
         {/* Header */}
@@ -683,5 +688,6 @@ export default function Home() {
         </footer>
       </div>
     </div>
+    </>
   );
 }
