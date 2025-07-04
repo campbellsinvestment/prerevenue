@@ -99,16 +99,17 @@ export default function Home() {
           </p>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
           
           {/* Form Section */}
-          <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-8 shadow-xl">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              <h2 className="text-2xl font-semibold text-white">
-                Input Data
-              </h2>
-            </div>
+          <div className="lg:sticky lg:top-8">
+            <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-8 shadow-xl">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                <h2 className="text-2xl font-semibold text-white">
+                  Input Data
+                </h2>
+              </div>
             
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
@@ -250,13 +251,13 @@ export default function Home() {
               <div className="space-y-6">
                 
                 {/* Success Score */}
-                <div className="bg-gray-700 border border-gray-600 rounded p-6">
+                <div className="bg-gradient-to-br from-green-900/30 to-green-800/20 border border-green-700/30 rounded-2xl p-6 backdrop-blur-sm">
                   <div className="text-center">
-                    <div className="text-4xl font-bold text-green-400 mb-2">
+                    <div className="text-5xl font-bold text-green-400 mb-3">
                       {result.success_score}/100
                     </div>
-                    <div className="text-gray-300">Success Score</div>
-                    <div className="text-sm text-gray-400 mt-1">
+                    <div className="text-gray-300 text-lg mb-2">Success Score</div>
+                    <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-500/20 text-green-300 border border-green-500/30">
                       {result.success_score >= 80 && 'Exceptional potential'}
                       {result.success_score >= 60 && result.success_score < 80 && 'Strong potential'}
                       {result.success_score >= 30 && result.success_score < 60 && 'Moderate potential'}
@@ -266,12 +267,12 @@ export default function Home() {
                 </div>
 
                 {/* Valuation */}
-                <div className="bg-gray-700 border border-gray-600 rounded p-6">
-                  <div className="text-center mb-4">
-                    <div className="text-3xl font-bold text-blue-400 mb-2">
+                <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/30 rounded-2xl p-6 backdrop-blur-sm">
+                  <div className="text-center">
+                    <div className="text-4xl font-bold text-blue-400 mb-3">
                       ${result.estimated_valuation.toLocaleString()}
                     </div>
-                    <div className="text-gray-300">Estimated Valuation</div>
+                    <div className="text-gray-300 text-lg mb-2">Estimated Valuation</div>
                     <div className="text-sm text-gray-400">
                       Range: ${result.valuation_range.low.toLocaleString()} - ${result.valuation_range.high.toLocaleString()}
                     </div>
@@ -279,65 +280,118 @@ export default function Home() {
                 </div>
 
                 {/* Breakdown */}
-                <div className="bg-gray-700 border border-gray-600 rounded p-6">
-                  <h3 className="text-lg font-semibold text-white mb-4">Breakdown</h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Revenue component:</span>
-                      <span className="text-white">${result.breakdown.revenue.toLocaleString()}</span>
+                <div className="bg-gray-800/50 border border-gray-700/50 rounded-2xl p-6 backdrop-blur-sm">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    Breakdown
+                  </h3>
+                  <div className="space-y-4 text-sm">
+                    <div className="flex justify-between items-center p-3 bg-gray-700/30 rounded-xl">
+                      <span className="text-gray-400 flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                        Revenue component:
+                      </span>
+                      <span className="text-white font-medium">${result.breakdown.revenue.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Traffic component:</span>
-                      <span className="text-white">${result.breakdown.traffic.toLocaleString()}</span>
+                    <div className="flex justify-between items-center p-3 bg-gray-700/30 rounded-xl">
+                      <span className="text-gray-400 flex items-center gap-2">
+                        <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                        Traffic component:
+                      </span>
+                      <span className="text-white font-medium">${result.breakdown.traffic.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Community component:</span>
-                      <span className="text-white">${result.breakdown.community.toLocaleString()}</span>
+                    <div className="flex justify-between items-center p-3 bg-gray-700/30 rounded-xl">
+                      <span className="text-gray-400 flex items-center gap-2">
+                        <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                        Community component:
+                      </span>
+                      <span className="text-white font-medium">${result.breakdown.community.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between border-t border-gray-600 pt-2">
-                      <span className="text-gray-400">Category multiplier:</span>
-                      <span className="text-white">{result.breakdown.multiplier}x</span>
+                    <div className="flex justify-between items-center p-3 bg-gray-700/30 rounded-xl border-t border-gray-600/50">
+                      <span className="text-gray-400 flex items-center gap-2">
+                        <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                        Category multiplier:
+                      </span>
+                      <span className="text-white font-medium">{result.breakdown.multiplier}x</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Methodology */}
-                <div className="bg-gray-700 border border-gray-600 rounded p-6">
-                  <h3 className="text-lg font-semibold text-white mb-4">How Your Score Was Calculated</h3>
-                  <div className="text-sm text-gray-400 space-y-3">
-                    <div className="bg-gray-800 p-3 rounded border-l-4 border-blue-500">
-                      <p className="text-blue-400 font-medium mb-1">Pre-Revenue Focus</p>
+                <div className="bg-gray-800/50 border border-gray-700/50 rounded-2xl p-6 backdrop-blur-sm">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    How Your Score Was Calculated
+                  </h3>
+                  <div className="text-sm text-gray-400 space-y-4">
+                    <div className="bg-gradient-to-r from-blue-900/30 to-blue-800/20 p-4 rounded-xl border border-blue-700/30">
+                      <p className="text-blue-400 font-medium mb-2">Pre-Revenue Focus</p>
                       <p>Since your startup is pre-revenue, we evaluate potential based on traction metrics that typically lead to monetization success.</p>
                     </div>
                     
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <p className="text-white font-medium">Valuation Components:</p>
-                      <p>• <span className="text-green-400">Projected Revenue:</span> Estimated at $0.05 MRR per user (industry average conversion)</p>
-                      <p>• <span className="text-blue-400">Traffic Value:</span> $0.10 per monthly visitor (based on acquisition cost benchmarks)</p>
-                      <p>• <span className="text-purple-400">Community Value:</span> $5.00 per user (engagement and retention potential)</p>
-                      <p>• <span className="text-yellow-400">Market Multiple:</span> Applied based on category performance from <a href="https://littleexits.com" className="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">Little Exits</a> data</p>
+                      <div className="grid gap-2">
+                        <p className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                          <span className="text-green-400 font-medium">Projected Revenue:</span> Estimated at $0.05 MRR per user (industry average conversion)
+                        </p>
+                        <p className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                          <span className="text-blue-400 font-medium">Traffic Value:</span> $0.10 per monthly visitor (based on acquisition cost benchmarks)
+                        </p>
+                        <p className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                          <span className="text-purple-400 font-medium">Community Value:</span> $5.00 per user (engagement and retention potential)
+                        </p>
+                        <p className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                          <span className="text-yellow-400 font-medium">Market Multiple:</span> Applied based on category performance from <a href="https://littleexits.com" className="text-blue-400 hover:text-blue-300 underline transition-colors" target="_blank" rel="noopener noreferrer">Little Exits</a> data
+                        </p>
+                      </div>
                     </div>
                     
-                    <div className="bg-gray-800 p-3 rounded border-l-4 border-purple-500">
-                      <p className="text-purple-400 font-medium mb-1">Category Analysis</p>
+                    <div className="bg-gradient-to-r from-purple-900/30 to-purple-800/20 p-4 rounded-xl border border-purple-700/30">
+                      <p className="text-purple-400 font-medium mb-2">Category Analysis</p>
                       <p>We prioritize specific project categories over broad classifications. Granular categories (like "Chrome Extension" or "API") carry more weight than broad ones (like "SaaS") to better reflect actual market performance.</p>
                     </div>
                     
-                    <div className="bg-gray-800 p-3 rounded border-l-4 border-yellow-500">
-                      <p className="text-yellow-400 font-medium mb-1">Success Score Logic</p>
+                    <div className="bg-gradient-to-r from-yellow-900/30 to-yellow-800/20 p-4 rounded-xl border border-yellow-700/30">
+                      <p className="text-yellow-400 font-medium mb-2">Success Score Logic</p>
                       <p>Combines user growth rate, traffic quality, market timing, and sustainability factors. Higher scores indicate stronger fundamentals for eventual monetization.</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Data Sources */}
-                <div className="bg-gray-700 border border-gray-600 rounded p-6">
-                  <h3 className="text-lg font-semibold text-white mb-4">Data Sources</h3>
+                <div className="bg-gray-800/50 border border-gray-700/50 rounded-2xl p-6 backdrop-blur-sm">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Data Sources
+                  </h3>
                   <div className="text-sm text-gray-400 space-y-2">
-                    <p>• Based on 500+ successful exits from <a href="https://littleexits.com" className="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">Little Exits</a> marketplace</p>
-                    <p>• Market multiples updated weekly from real transaction data</p>
-                    <p>• Conversion rates derived from SaaS and startup benchmarks</p>
-                    <p>• Category adjustments reflect actual market performance by sector</p>
+                    <p className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>
+                      Based on 500+ successful exits from <a href="https://littleexits.com" className="text-blue-400 hover:text-blue-300 underline transition-colors" target="_blank" rel="noopener noreferrer">Little Exits</a> marketplace
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>
+                      Market multiples updated weekly from real transaction data
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>
+                      Conversion rates derived from SaaS and startup benchmarks
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>
+                      Category adjustments reflect actual market performance by sector
+                    </p>
                   </div>
                 </div>
               </div>
@@ -346,9 +400,9 @@ export default function Home() {
         </div>
 
         {/* Footer */}
-        <footer className="text-center mt-16 pt-8 border-t border-gray-700">
-          <p className="text-gray-400 text-sm">
-            Data sourced from <a href="https://app.littleexits.com" className="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">Little Exits</a> marketplace
+        <footer className="text-center mt-20 pt-8 border-t border-gray-800/50">
+          <p className="text-gray-500 text-sm">
+            Data sourced from <a href="https://app.littleexits.com" className="text-blue-400 hover:text-blue-300 underline transition-colors" target="_blank" rel="noopener noreferrer">Little Exits</a> marketplace
           </p>
         </footer>
       </div>
