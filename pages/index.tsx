@@ -52,10 +52,19 @@ export default function Home() {
 
   // Load top performers data
   useEffect(() => {
+    console.log('Loading top performers...');
     fetch('/api/top-performers')
-      .then(res => res.json())
-      .then(data => setTopPerformers(data.topPerformers))
-      .catch(err => console.error('Failed to load top performers:', err));
+      .then(res => {
+        console.log('Top performers response status:', res.status);
+        return res.json();
+      })
+      .then(data => {
+        console.log('Top performers data:', data);
+        setTopPerformers(data.topPerformers);
+      })
+      .catch(err => {
+        console.error('Failed to load top performers:', err);
+      });
   }, []);
 
   const performAnalysis = useCallback(async (data: typeof formData) => {

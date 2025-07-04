@@ -1,0 +1,155 @@
+{
+  "lastUpdated": "2025-01-04T16:30:00.000Z",
+  "totalProjects": 847,
+  "soldProjects": 312,
+  "categoryMultipliers": {
+    "SaaS": 1.3,
+    "AI": 1.4,
+    "E-commerce": 1.2,
+    "Chrome Extension": 1.2,
+    "API": 1.2,
+    "Automation": 1.1,
+    "Newsletter": 1.1,
+    "Marketplace": 1.0,
+    "Developer Tools": 1.2,
+    "Webflow": 1.1,
+    "Web3": 1.0,
+    "Community": 0.9,
+    "Blog": 0.8,
+    "Wordpress": 0.7
+  },
+  "avgRevenueMultiple": 2.8,
+  "avgProfitMultiple": 3.2,
+  "avgTrafficValue": 0.12,
+  "avgCommunityValue": 4.8,
+  "successPatterns": {
+    "topCategories": [
+      "SaaS",
+      "AI",
+      "Chrome Extension",
+      "E-commerce",
+      "Developer Tools"
+    ],
+    "avgSoldPrice": 6420,
+    "avgUserBase": 3200,
+    "avgTraffic": 12500
+  },
+  "topPerformers": {
+    "mainCategories": [
+      {
+        "name": "AI",
+        "successRate": 0.73,
+        "avgPrice": 9200,
+        "projects": 35
+      },
+      {
+        "name": "SaaS",
+        "successRate": 0.71,
+        "avgPrice": 11500,
+        "projects": 58
+      },
+      {
+        "name": "Developer Tools",
+        "successRate": 0.68,
+        "avgPrice": 7800,
+        "projects": 42
+      },
+      {
+        "name": "E-commerce",
+        "successRate": 0.54,
+        "avgPrice": 5200,
+        "projects": 89
+      },
+      {
+        "name": "Chrome Extension",
+        "successRate": 0.76,
+        "avgPrice": 3800,
+        "projects": 28
+      }
+    ],
+    "specificCategories": [
+      {
+        "name": "Newsletter Tool",
+        "successRate": 0.82,
+        "avgPrice": 4200,
+        "projects": 18
+      },
+      {
+        "name": "Chrome Extension",
+        "successRate": 0.76,
+        "avgPrice": 3800,
+        "projects": 28
+      },
+      {
+        "name": "API Service",
+        "successRate": 0.72,
+        "avgPrice": 6800,
+        "projects": 22
+      },
+      {
+        "name": "Automation Script",
+        "successRate": 0.69,
+        "avgPrice": 2900,
+        "projects": 31
+      },
+      {
+        "name": "AI Tool",
+        "successRate": 0.78,
+        "avgPrice": 8500,
+        "projects": 19
+      }
+    ],
+    "keywords": [
+      {
+        "word": "analytics",
+        "frequency": 89,
+        "avgPrice": 5200
+      },
+      {
+        "word": "automation",
+        "frequency": 124,
+        "avgPrice": 4100
+      },
+      {
+        "word": "dashboard",
+        "frequency": 76,
+        "avgPrice": 4800
+      },
+      {
+        "word": "integration",
+        "frequency": 67,
+        "avgPrice": 5900
+      },
+      {
+        "word": "productivity",
+        "frequency": 98,
+        "avgPrice": 3800
+      },
+      {
+        "word": "saas",
+        "frequency": 156,
+        "avgPrice": 7200
+      },
+      {
+        "word": "ai",
+        "frequency": 78,
+        "avgPrice": 6900
+      },
+      {
+        "word": "chrome",
+        "frequency": 45,
+        "avgPrice": 3200
+      },
+      {
+        "word": "api",
+        "frequency": 112,
+        "avgPrice": 4600
+      },
+      {
+        "word": "tool",
+        "frequency": 234,
+        "avgPrice": 4200
+      }
+    ]
+  }
+}

@@ -65,23 +65,45 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       res.status(500).json({ error: 'Failed to load market data' });
     }
   } else if (req.method === 'POST') {
-    // PROTECTED: Only allow updates from authenticated sources
+    // PROTECTED: Only allow updates from authenticated sources (cron jobs)
     const authHeader = req.headers.authorization;
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET || 'missing-secret'}`) {
+    const expectedAuth = `Bearer ${process.env.CRON_SECRET || 'missing-secret'}`;
+    
+    if (authHeader !== expectedAuth) {
+      console.error('Unauthorized market analysis attempt:', { 
+        provided: authHeader?.substring(0, 20) + '...', 
+        expected: expectedAuth.substring(0, 20) + '...' 
+      });
       return res.status(401).json({ error: 'Unauthorized' });
     }
+    
+    console.log('Starting scheduled market analysis update...');
     
     // Update market data by analyzing Little Exits
     try {
       const marketData = await analyzeMarketData();
       saveMarketData(marketData);
+      
+      console.log('Market analysis completed:', {
+        totalProjects: marketData.totalProjects,
+        soldProjects: marketData.soldProjects,
+        categoriesAnalyzed: Object.keys(marketData.categoryMultipliers).length,
+        lastUpdated: marketData.lastUpdated
+      });
+      
       res.status(200).json({ 
         message: 'Market data updated successfully',
-        // Don't return sensitive data
+        summary: {
+          totalProjects: marketData.totalProjects,
+          soldProjects: marketData.soldProjects,
+          categoriesAnalyzed: Object.keys(marketData.categoryMultipliers).length,
+          lastUpdated: marketData.lastUpdated
+        }
       });
     } catch (error) {
       console.error('Error updating market data:', error);
-      res.status(500).json({ error: 'Failed to update market data' });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      res.status(500).json({ error: 'Failed to update market data', details: errorMessage });
     }
   } else {
     res.status(405).json({ error: 'Method Not Allowed' });

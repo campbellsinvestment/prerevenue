@@ -158,37 +158,37 @@ async function getEstimatedValuation(formData: any): Promise<{valuation: number,
     // Base valuation calculation
     let estimatedValue = 0;
     
-    // 1. User base valuation (more conservative and realistic)
+    // 1. User base valuation (more conservative for pre-revenue)
     if (userBase > 0) {
       let userValue = 0;
-      if (userBase >= 10000) userValue = userBase * 8;      // Premium for large user base
-      else if (userBase >= 5000) userValue = userBase * 6;   // Good user base
-      else if (userBase >= 2500) userValue = userBase * 5;   // Market average
-      else if (userBase >= 1000) userValue = userBase * 3;   // Below average
-      else if (userBase >= 500) userValue = userBase * 2;    // Minimal value
-      else userValue = userBase * 1;                         // Very low value
+      if (userBase >= 10000) userValue = userBase * 3;      // Significantly reduced for pre-revenue
+      else if (userBase >= 5000) userValue = userBase * 2.5; // More realistic
+      else if (userBase >= 2500) userValue = userBase * 2;   // Conservative
+      else if (userBase >= 1000) userValue = userBase * 1.5; // Lower multiple
+      else if (userBase >= 500) userValue = userBase * 1;    // Minimal value
+      else userValue = userBase * 0.5;                       // Very conservative
       
       estimatedValue += userValue;
     }
     
-    // 2. Traffic valuation (more realistic traffic value)
+    // 2. Traffic valuation (much more realistic for pre-revenue)
     if (monthlyTraffic > 0) {
       let trafficValue = 0;
-      if (monthlyTraffic >= 100000) trafficValue = monthlyTraffic * 0.15;    // High-quality traffic
-      else if (monthlyTraffic >= 50000) trafficValue = monthlyTraffic * 0.12; // Good traffic
-      else if (monthlyTraffic >= 20000) trafficValue = monthlyTraffic * 0.10; // Market average
-      else if (monthlyTraffic >= 8000) trafficValue = monthlyTraffic * 0.08;  // Below average
-      else if (monthlyTraffic >= 3000) trafficValue = monthlyTraffic * 0.05;  // Low value
-      else trafficValue = monthlyTraffic * 0.02;                              // Very low value
+      if (monthlyTraffic >= 100000) trafficValue = monthlyTraffic * 0.08;    // Reduced from 0.15
+      else if (monthlyTraffic >= 50000) trafficValue = monthlyTraffic * 0.06; // Reduced from 0.12
+      else if (monthlyTraffic >= 20000) trafficValue = monthlyTraffic * 0.05; // Reduced from 0.10
+      else if (monthlyTraffic >= 8000) trafficValue = monthlyTraffic * 0.03;  // Reduced from 0.08
+      else if (monthlyTraffic >= 3000) trafficValue = monthlyTraffic * 0.02;  // Reduced from 0.05
+      else trafficValue = monthlyTraffic * 0.01;                              // Reduced from 0.02
       
       estimatedValue += trafficValue;
     }
     
-    // 3. Revenue potential (more conservative for pre-revenue)
-    const estimatedMRR = Math.max(userBase * 0.03, 0); // Lower conversion assumption
+    // 3. Revenue potential (much more conservative for pre-revenue)
+    const estimatedMRR = Math.max(userBase * 0.01, 0); // Even lower conversion assumption
     if (estimatedMRR > 0) {
       const annualRevenue = estimatedMRR * 12;
-      const revenueValue = annualRevenue * 1.8; // Lower multiple for pre-revenue
+      const revenueValue = annualRevenue * 1.2; // Much lower multiple for pre-revenue
       estimatedValue += revenueValue;
     }
     
@@ -246,8 +246,8 @@ async function getEstimatedValuation(formData: any): Promise<{valuation: number,
       estimatedValue = 50; // Minimum for any meaningful attempt
     }
 
-    // Realistic maximum for pre-revenue startups
-    const maxValuation = 100000;
+    // Realistic maximum for pre-revenue startups (more conservative)
+    const maxValuation = 50000;
     const isMaxValuation = estimatedValue >= maxValuation;
     estimatedValue = Math.min(estimatedValue, maxValuation);
 
