@@ -11,75 +11,105 @@ interface ValuationMetrics {
   categoryMultipliers: { [category: string]: number };
 }
 
-// Market performance data based on Little Exits successful exits and offers
-const MARKET_PERFORMANCE_DATA: { [key: string]: number } = {
-  // High performers (1.4x - 1.6x multiplier) - categories with most successful exits
-  'SaaS': 1.5,
-  'AI': 1.6,
-  'E-commerce': 1.4,
-  'Webflow': 1.4,
-  'Chrome Extension': 1.3,
-  'API': 1.3,
-  'Automation': 1.3,
-  
-  // Strong performers (1.1x - 1.3x multiplier) - good success rate
-  'Marketplace': 1.2,
-  'Newsletter': 1.2,
-  'Web3': 1.2,
-  'NFT': 1.2,
-  'Crypto': 1.2,
-  'Native app': 1.1,
-  'iOS': 1.1,
-  'Android': 1.1,
-  'Plugin': 1.1,
-  'Shopify': 1.1,
-  'Next.js': 1.1,
-  'React': 1.1,
-  'Node.js': 1.1,
-  
-  // Average performers (0.9x - 1.0x multiplier) - moderate success
-  'Community': 1.0,
-  'Chat Bot': 1.0,
-  'Web scraper': 1.0,
-  'Notion': 1.0,
-  'Airtable': 1.0,
-  'Zapier': 1.0,
-  'Blog': 0.9,
-  'Directory': 0.9,
-  'Forum': 0.9,
-  'Review': 0.9,
-  
-  // Lower performers (0.7x - 0.8x multiplier) - fewer successful exits
-  'Gumroad Course': 0.8,
-  'Source Code': 0.8,
-  'Spreadsheet': 0.8,
-  'Physical': 0.7,
-  'Inventory Holding': 0.7,
-  'Dropship': 0.7,
-  
-  // Development tools and platforms (variable based on implementation)
-  'Bubble': 1.0,
-  'Adalo': 1.0,
-  'GlideApps': 1.0,
-  'Softr': 1.0,
-  'Wordpress': 0.9,
-  'Dorik': 0.9,
-  'Backendless': 1.0,
-};
+interface MarketData {
+  lastUpdated: string;
+  totalProjects: number;
+  soldProjects: number;
+  categoryMultipliers: { [category: string]: number };
+  avgRevenueMultiple: number;
+  avgProfitMultiple: number;
+  avgTrafficValue: number;
+  avgCommunityValue: number;
+  successPatterns: {
+    topCategories: string[];
+    avgSoldPrice: number;
+    avgUserBase: number;
+    avgTraffic: number;
+  };
+}
 
-function loadCategories(): { [key: string]: string } {
+function loadMarketData(): MarketData {
   try {
-    const categoriesPath = path.join(process.cwd(), 'data', 'categories.json');
-    const categoriesData = fs.readFileSync(categoriesPath, 'utf8');
-    return JSON.parse(categoriesData);
+    const marketDataPath = path.join(process.cwd(), 'data', 'market-analysis.json');
+    if (fs.existsSync(marketDataPath)) {
+      const data = fs.readFileSync(marketDataPath, 'utf8');
+      return JSON.parse(data);
+    } else {
+      // Return default data if analysis hasn't run yet
+      return getDefaultMarketData();
+    }
   } catch (error) {
-    console.error('Error loading categories:', error);
-    return {};
+    console.error('Error loading market data:', error);
+    return getDefaultMarketData();
   }
 }
 
-function getCategoryMultiplier(category: string): number {
-  return MARKET_PERFORMANCE_DATA[category] || 1.0;
+function getDefaultMarketData(): MarketData {
+  return {
+    lastUpdated: new Date().toISOString(),
+    totalProjects: 0,
+    soldProjects: 0,
+    categoryMultipliers: {
+      'SaaS': 1.5,
+      'AI': 1.6,
+      'E-commerce': 1.4,
+      'Webflow': 1.4,
+      'Chrome Extension': 1.3,
+      'API': 1.3,
+      'Automation': 1.3,
+      'Marketplace': 1.2,
+      'Newsletter': 1.2,
+      'Web3': 1.2,
+      'Community': 1.0,
+      'Blog': 0.9,
+    },
+    avgRevenueMultiple: 2.5,
+    avgProfitMultiple: 3.0,
+    avgTrafficValue: 0.1,
+    avgCommunityValue: 5,
+    successPatterns: {
+      topCategories: ['SaaS', 'AI', 'E-commerce'],
+      avgSoldPrice: 15000,
+      avgUserBase: 2500,
+      avgTraffic: 8000
+    }
+  };
+}
+
+function getCategoryMultiplier(category: string, marketData: MarketData): number {
+  if (!category) return 1.0;
+  
+  const categoryLower = category.toLowerCase().trim();
+  
+  // Direct match first
+  if (marketData.categoryMultipliers[category]) {
+    return marketData.categoryMultipliers[category];
+  }
+  
+  // Fuzzy matching for common variations
+  const categoryMappings: { [key: string]: string[] } = {
+    'SaaS': ['saas', 'software', 'software-as-a-service', 'b2b software', 'web app'],
+    'AI': ['ai', 'artificial intelligence', 'machine learning', 'ml', 'gpt', 'llm'],
+    'E-commerce': ['ecommerce', 'e-commerce', 'online store', 'marketplace', 'retail'],
+    'API': ['api', 'rest api', 'graphql', 'webhook', 'integration'],
+    'Chrome Extension': ['chrome extension', 'browser extension', 'extension'],
+    'Mobile App': ['mobile app', 'ios app', 'android app', 'react native', 'flutter'],
+    'Newsletter': ['newsletter', 'email list', 'email marketing', 'substack'],
+    'Web3': ['web3', 'crypto', 'blockchain', 'nft', 'defi', 'dao'],
+    'Community': ['community', 'forum', 'discord', 'social network'],
+    'Blog': ['blog', 'content site', 'news site', 'publication'],
+    'Automation': ['automation', 'workflow', 'zapier', 'no-code']
+  };
+  
+  // Find best match
+  for (const [mainCategory, variations] of Object.entries(categoryMappings)) {
+    if (variations.some(variation => categoryLower.includes(variation) || variation.includes(categoryLower))) {
+      return marketData.categoryMultipliers[mainCategory] || 1.0;
+    }
+  }
+  
+  // Default multiplier if no match found
+  return 1.0;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -112,13 +142,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 async function getEstimatedValuation(formData: any): Promise<number> {
   try {
+    // Load current market data
+    const marketData = loadMarketData();
+    
     // Use market-based valuation metrics
     const metrics: ValuationMetrics = {
-      avgRevenueMultiple: 2.5,
-      avgProfitMultiple: 3.0,
-      avgTrafficValue: 0.1,
-      avgCommunityValue: 5,
-      categoryMultipliers: MARKET_PERFORMANCE_DATA
+      avgRevenueMultiple: marketData.avgRevenueMultiple,
+      avgProfitMultiple: marketData.avgProfitMultiple,
+      avgTrafficValue: marketData.avgTrafficValue,
+      avgCommunityValue: marketData.avgCommunityValue,
+      categoryMultipliers: marketData.categoryMultipliers
     };
 
     // Extract data from form
@@ -163,7 +196,7 @@ async function getEstimatedValuation(formData: any): Promise<number> {
     // Apply market performance-based category multiplier
     let categoryMultiplier = 1;
     if (categories.length > 0) {
-      const categoryValues = categories.map((cat: string) => getCategoryMultiplier(cat));
+      const categoryValues = categories.map((cat: string) => getCategoryMultiplier(cat, marketData));
       categoryMultiplier = categoryValues.reduce((a: number, b: number) => a + b, 0) / categoryValues.length;
     }
     estimatedValue = estimatedValue * categoryMultiplier;
@@ -263,6 +296,9 @@ function calculateFallbackScore(formData: any): number {
   const monthlyCost = parseInt(formData.monthly_cost || '0', 10);
   const categories = formData.categories || [];
   
+  // Load market data for category scoring
+  const marketData = loadMarketData();
+  
   // User traction scoring
   if (userBase > 5000) score += 15;
   else if (userBase > 1000) score += 10;
@@ -275,7 +311,7 @@ function calculateFallbackScore(formData: any): number {
   
   // Market performance-based category scoring
   for (const category of categories) {
-    const multiplier = getCategoryMultiplier(category);
+    const multiplier = getCategoryMultiplier(category, marketData);
     if (multiplier >= 1.4) score += 12; // High performers
     else if (multiplier >= 1.2) score += 8; // Strong performers
     else if (multiplier >= 1.0) score += 4; // Average performers

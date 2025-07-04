@@ -1,24 +1,7 @@
 // pages/api/littleexits/index.ts
 import { NextApiRequest, NextApiResponse } from 'next';
-import Cors from 'cors';
 
-// Initialize cors middleware
-const cors = Cors({
-  methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  origin: process.env.NEXT_PUBLIC_APP_URL,
-});
-
-// Helper method to run middleware
-const runMiddleware = async (req: NextApiRequest, res: NextApiResponse, fn: any) => {
-  return new Promise((resolve, reject) => {
-    fn(req, res, (result: any) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
-  });
-};
+// Remove the cors dependency since we don't need it for this internal API
 
 interface ProjectData {
   _id: string;
@@ -43,7 +26,7 @@ interface ProjectData {
 }
 
 const handlers = {
-  // Fetch a specific project by ID from Little Exits/Tiny Acquisitions
+  // Fetch a specific project by ID from Little Exits
   fetchProject: async (req: NextApiRequest, res: NextApiResponse) => {
     const { projectId } = req.body;
 
@@ -262,9 +245,6 @@ function identifySuccessFactors(projectData: any): string[] {
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    // Run cors middleware
-    await runMiddleware(req, res, cors);
-
     const handler = handlers[req.body.method as keyof typeof handlers];
   
     if (handler) {

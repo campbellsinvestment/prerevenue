@@ -88,11 +88,11 @@ export default function Home() {
         {/* Header */}
         <header className="text-center mb-16">
           <h1 className="text-4xl font-bold mb-4 text-white">
-            prerevenue.io
+            Pre-Revenue
           </h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
             Evaluate your pre-revenue startup using AI and real market data from 500+ successful exits.
-            Free analysis based on Little Exits marketplace data.
+            Free analysis based on <a href="https://littleexits.com" className="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">Little Exits</a> marketplace data.
           </p>
         </header>
 
@@ -282,15 +282,41 @@ export default function Home() {
 
                 {/* Methodology */}
                 <div className="bg-gray-700 border border-gray-600 rounded p-6">
-                  <h3 className="text-lg font-semibold text-white mb-4">Methodology</h3>
+                  <h3 className="text-lg font-semibold text-white mb-4">How Your Score Was Calculated</h3>
+                  <div className="text-sm text-gray-400 space-y-3">
+                    <div className="bg-gray-800 p-3 rounded border-l-4 border-blue-500">
+                      <p className="text-blue-400 font-medium mb-1">Pre-Revenue Focus</p>
+                      <p>Since your startup is pre-revenue, we evaluate potential based on traction metrics that typically lead to monetization success.</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <p className="text-white font-medium">Valuation Components:</p>
+                      <p>• <span className="text-green-400">Projected Revenue:</span> Estimated at $0.05 MRR per user (industry average conversion)</p>
+                      <p>• <span className="text-blue-400">Traffic Value:</span> $0.10 per monthly visitor (based on acquisition cost benchmarks)</p>
+                      <p>• <span className="text-purple-400">Community Value:</span> $5.00 per user (engagement and retention potential)</p>
+                      <p>• <span className="text-yellow-400">Market Multiple:</span> Applied based on category performance from <a href="https://littleexits.com" className="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">Little Exits</a> data</p>
+                    </div>
+                    
+                    <div className="bg-gray-800 p-3 rounded border-l-4 border-purple-500">
+                      <p className="text-purple-400 font-medium mb-1">Category Analysis</p>
+                      <p>We prioritize specific project categories over broad classifications. Granular categories (like "Chrome Extension" or "API") carry more weight than broad ones (like "SaaS") to better reflect actual market performance.</p>
+                    </div>
+                    
+                    <div className="bg-gray-800 p-3 rounded border-l-4 border-yellow-500">
+                      <p className="text-yellow-400 font-medium mb-1">Success Score Logic</p>
+                      <p>Combines user growth rate, traffic quality, market timing, and sustainability factors. Higher scores indicate stronger fundamentals for eventual monetization.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Data Sources */}
+                <div className="bg-gray-700 border border-gray-600 rounded p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">Data Sources</h3>
                   <div className="text-sm text-gray-400 space-y-2">
-                    <p>• Based on 500+ successful exits from Little Exits marketplace</p>
-                    <p>• Revenue multiple: 2.5x average annual revenue</p>
-                    <p>• Traffic value: $0.10 per monthly visitor</p>
-                    <p>• Community value: $5.00 per user</p>
-                    <p>• Market performance multipliers based on actual exit data</p>
-                    <p>• High-performing categories (AI, SaaS): 1.4x-1.6x multiplier</p>
-                    <p>• Categories with fewer exits get lower multipliers</p>
+                    <p>• Based on 500+ successful exits from <a href="https://littleexits.com" className="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">Little Exits</a> marketplace</p>
+                    <p>• Market multiples updated weekly from real transaction data</p>
+                    <p>• Conversion rates derived from SaaS and startup benchmarks</p>
+                    <p>• Category adjustments reflect actual market performance by sector</p>
                   </div>
                 </div>
               </div>
