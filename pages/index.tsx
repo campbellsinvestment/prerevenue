@@ -210,13 +210,12 @@ export default function Home() {
                   'Evaluate'
                 )}
               </button>
-            </form>
-
-            {error && (
-              <div className="mt-6 p-4 bg-red-900/50 border border-red-700/50 rounded-xl text-red-200 text-sm backdrop-blur-sm">
-                {error}
-              </div>
-            )}
+            </form>              {error && (
+                <div className="mt-6 p-4 bg-red-900/50 border border-red-700/50 rounded-xl text-red-200 text-sm backdrop-blur-sm">
+                  {error}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Results Section */}
