@@ -8,19 +8,19 @@ class MyDocument extends Document {
         <link rel='icon' href='/favicon.png' />
         <meta
           name="description"
-          content="Forecast the success potential of pre-revenue startups for sale using AI."
+          content="Evaluate your pre-revenue startup with AI analysis based on Little Exits marketplace data from 200+ successful exits."
         />
         <meta property="og:site_name" content="prerevenue.io" />
         <meta
           property="og:description"
-          content="Forecast the success potential of pre-revenue startups for sale using AI."
+          content="Evaluate your pre-revenue startup with AI analysis based on Little Exits marketplace data from 200+ successful exits."
         />
-        <meta property="og:title" content="Pre-Revenue Startups" />
+        <meta property="og:title" content="Pre-Revenue Startup Evaluation Tool" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Pre-revenue Startups" />
+        <meta name="twitter:title" content="Pre-Revenue Startup Evaluation Tool" />
         <meta
           name="twitter:description"
-          content="Forecast the success potential of pre-revenue startups for sale using AI."
+          content="Evaluate your pre-revenue startup with AI analysis based on Little Exits marketplace data from 200+ successful exits."
         />
         <meta
           property="og:image"

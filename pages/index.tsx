@@ -176,8 +176,26 @@ export default function Home() {
           </h1>
           <p className="text-base sm:text-lg lg:text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed font-normal px-4">
             Evaluate your pre-revenue startup with a simple tagline and traction metrics. 
-            Get instant AI analysis based on <a href="https://littleexits.com" className="text-blue-400 hover:text-blue-300 underline transition-colors" target="_blank" rel="noopener noreferrer">Little Exits</a> marketplace data from 500+ successful exits.
+            Get instant AI analysis based on <a href="https://littleexits.com" className="text-blue-400 hover:text-blue-300 underline transition-colors" target="_blank" rel="noopener noreferrer">Little Exits</a> marketplace data from 200+ successful exits.
           </p>
+          
+          {/* Little Exits Branding */}
+          <div className="mt-8 sm:mt-12 flex items-center justify-center gap-3 text-sm text-gray-500">
+            <span>Powered by</span>
+            <a 
+              href="https://littleexits.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 hover:text-gray-400 transition-colors"
+            >
+              <img 
+                src="/Little Exits Icon Dark.png" 
+                alt="Little Exits" 
+                className="w-5 h-5 rounded"
+              />
+              <span className="font-medium">Little Exits</span>
+            </a>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-start">
@@ -504,7 +522,7 @@ export default function Home() {
                     <div className="flex items-start gap-2">
                       <div className="w-1.5 h-1.5 bg-gray-500 rounded-full mt-1 flex-shrink-0"></div>
                       <div>
-                        <span>Based on 500+ successful exits from </span>
+                        <span>Based on 200+ successful exits from </span>
                         <a href="https://littleexits.com" className="text-blue-400 hover:text-blue-300 underline transition-colors" target="_blank" rel="noopener noreferrer">Little Exits</a>
                         <span> marketplace</span>
                       </div>
