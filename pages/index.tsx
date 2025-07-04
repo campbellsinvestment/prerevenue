@@ -82,102 +82,108 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 font-mono">
-      <div className="max-w-4xl mx-auto px-4 py-16">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-gray-100 font-mono">
+      <div className="max-w-6xl mx-auto px-4 py-16">
         
         {/* Header */}
-        <header className="text-center mb-16">
-          <h1 className="text-4xl font-bold mb-4 text-white">
+        <header className="text-center mb-20">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mb-6 shadow-lg shadow-blue-500/25">
+            <span className="text-2xl font-bold text-white">PR</span>
+          </div>
+          <h1 className="text-5xl font-bold mb-6 text-white tracking-tight">
             Pre-Revenue
           </h1>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed font-normal">
             Evaluate your pre-revenue startup using AI and real market data from 500+ successful exits.
-            Free analysis based on <a href="https://littleexits.com" className="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">Little Exits</a> marketplace data.
+            Free analysis based on <a href="https://littleexits.com" className="text-blue-400 hover:text-blue-300 underline transition-colors" target="_blank" rel="noopener noreferrer">Little Exits</a> marketplace data.
           </p>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           {/* Form Section */}
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-8">
-            <h2 className="text-2xl font-bold mb-6 text-white">
-              Input Data
-            </h2>
+          <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-8 shadow-xl">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              <h2 className="text-2xl font-semibold text-white">
+                Input Data
+              </h2>
+            </div>
             
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300">
                   Project Name
                 </label>
                 <input
                   type="text"
                   name="title"
                   required
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
                   placeholder="MyStartup"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300">
                   Description
                 </label>
                 <textarea
                   name="description"
                   rows={3}
                   required
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 resize-none"
                   placeholder="Brief description of what your startup does..."
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-300">
                     Users
                   </label>
                   <input
                     type="number"
                     name="user_base"
                     min="0"
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
                     placeholder="1000"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-300">
                     Monthly Traffic
                   </label>
                   <input
                     type="number"
                     name="traffic"
                     min="0"
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
                     placeholder="5000"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-300">
                     Monthly Costs ($)
                   </label>
                   <input
                     type="number"
                     name="monthly_cost"
                     min="0"
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
                     placeholder="500"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-300">
                     Category/Stack
                   </label>
                   <select
                     name="category"
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full bg-gray-800/50 border border-gray-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
                   >
                     <option value="">Select Category/Stack</option>
                     {categories.map((category) => (
@@ -192,36 +198,51 @@ export default function Home() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white font-medium py-3 px-4 rounded transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-600 disabled:to-gray-700 text-white font-medium py-4 px-6 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 shadow-lg shadow-blue-600/25 disabled:shadow-none"
               >
-                {isLoading ? 'Analyzing...' : 'Evaluate'}
+                {isLoading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Analyzing...
+                  </div>
+                ) : (
+                  'Evaluate'
+                )}
               </button>
             </form>
 
             {error && (
-              <div className="mt-4 p-3 bg-red-900 border border-red-700 rounded text-red-200 text-sm">
+              <div className="mt-6 p-4 bg-red-900/50 border border-red-700/50 rounded-xl text-red-200 text-sm backdrop-blur-sm">
                 {error}
               </div>
             )}
           </div>
 
           {/* Results Section */}
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-8">
-            <h2 className="text-2xl font-bold mb-6 text-white">
-              Analysis Results
-            </h2>
+          <div className="bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-8 shadow-xl">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+              <h2 className="text-2xl font-semibold text-white">
+                Analysis Results
+              </h2>
+            </div>
 
             {!result && !isLoading && (
-              <div className="text-center text-gray-400 py-12">
-                <div className="text-6xl mb-4">{ }</div>
-                <p>Enter your startup data to get an evaluation</p>
+              <div className="text-center text-gray-400 py-16">
+                <div className="w-24 h-24 mx-auto mb-6 bg-gray-800/50 rounded-2xl flex items-center justify-center">
+                  <svg className="w-12 h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <p className="text-lg">Enter your startup data to get an evaluation</p>
               </div>
             )}
 
             {isLoading && (
-              <div className="text-center text-gray-400 py-12">
-                <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p>Processing your data...</p>
+              <div className="text-center text-gray-400 py-16">
+                <div className="w-12 h-12 border-2 border-gray-600 border-t-blue-500 rounded-full animate-spin mx-auto mb-6"></div>
+                <p className="text-lg">Processing your data...</p>
+                <p className="text-sm text-gray-500 mt-2">Analyzing market trends and calculating your score</p>
               </div>
             )}
 
