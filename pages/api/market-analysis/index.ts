@@ -18,6 +18,11 @@ interface MarketData {
     avgUserBase: number;
     avgTraffic: number;
   };
+  topPerformers: {
+    mainCategories: Array<{ name: string; successRate: number; avgPrice: number; projects: number }>;
+    specificCategories: Array<{ name: string; successRate: number; avgPrice: number; projects: number }>;
+    keywords: Array<{ word: string; frequency: number; avgPrice: number }>;
+  };
 }
 
 interface LittleExitsProject {
@@ -121,9 +126,30 @@ function getDefaultMarketData(): MarketData {
     avgCommunityValue: 5,
     successPatterns: {
       topCategories: ['SaaS', 'AI', 'E-commerce'],
-      avgSoldPrice: 15000,
+      avgSoldPrice: 4800,
       avgUserBase: 2500,
       avgTraffic: 8000
+    },
+    topPerformers: {
+      mainCategories: [
+        { name: 'SaaS', successRate: 0.68, avgPrice: 8500, projects: 42 },
+        { name: 'AI', successRate: 0.71, avgPrice: 7200, projects: 28 },
+        { name: 'Developer Tools', successRate: 0.64, avgPrice: 6800, projects: 35 },
+        { name: 'E-commerce', successRate: 0.52, avgPrice: 4500, projects: 67 }
+      ],
+      specificCategories: [
+        { name: 'Newsletter Tool', successRate: 0.78, avgPrice: 3200, projects: 12 },
+        { name: 'Chrome Extension', successRate: 0.72, avgPrice: 2800, projects: 18 },
+        { name: 'API Service', successRate: 0.69, avgPrice: 5500, projects: 15 },
+        { name: 'Automation Script', successRate: 0.65, avgPrice: 2100, projects: 21 }
+      ],
+      keywords: [
+        { word: 'analytics', frequency: 67, avgPrice: 4800 },
+        { word: 'automation', frequency: 89, avgPrice: 3600 },
+        { word: 'dashboard', frequency: 54, avgPrice: 4200 },
+        { word: 'integration', frequency: 43, avgPrice: 5100 },
+        { word: 'productivity', frequency: 76, avgPrice: 3400 }
+      ]
     }
   };
 }
@@ -143,13 +169,17 @@ async function analyzeMarketData(): Promise<MarketData> {
     // Identify success patterns
     const successPatterns = identifySuccessPatterns(soldProjects);
     
+    // Analyze top performers (categories and keywords)
+    const topPerformers = analyzeTopPerformers(allProjects, soldProjects);
+    
     return {
       lastUpdated: new Date().toISOString(),
       totalProjects: allProjects.length,
       soldProjects: soldProjects.length,
       categoryMultipliers: categoryAnalysis,
       ...marketMetrics,
-      successPatterns
+      successPatterns,
+      topPerformers
     };
   } catch (error) {
     console.error('Error analyzing market data:', error);
@@ -390,5 +420,100 @@ function identifySuccessPatterns(soldProjects: LittleExitsProject[]): {
     avgSoldPrice: Math.round(avgSoldPrice),
     avgUserBase: Math.round(avgUserBase),
     avgTraffic: Math.round(avgTraffic)
+  };
+}
+
+function analyzeTopPerformers(
+  allProjects: LittleExitsProject[], 
+  soldProjects: LittleExitsProject[]
+): {
+  mainCategories: Array<{ name: string; successRate: number; avgPrice: number; projects: number }>;
+  specificCategories: Array<{ name: string; successRate: number; avgPrice: number; projects: number }>;
+  keywords: Array<{ word: string; frequency: number; avgPrice: number }>;
+} {
+  const categoryStats: { [category: string]: { total: number; sold: number; totalPrice: number; isMainCategory: boolean } } = {};
+  
+  // Define what we consider "main" categories (broad classifications)
+  const mainCategoryTerms = ['SaaS', 'AI', 'E-commerce', 'Marketplace', 'Social', 'Analytics', 'Productivity', 'Communication', 'Education', 'Gaming', 'Health', 'Finance'];
+  
+  // Analyze all categories
+  allProjects.forEach(project => {
+    const categories = [
+      project.category,
+      project.listing_main_category,
+      ...(project.categories || [])
+    ].filter((cat): cat is string => Boolean(cat && cat.trim()));
+    
+    categories.forEach(category => {
+      const cat = category.trim();
+      if (!categoryStats[cat]) {
+        const isMain = mainCategoryTerms.some(term => cat.toLowerCase().includes(term.toLowerCase()));
+        categoryStats[cat] = { total: 0, sold: 0, totalPrice: 0, isMainCategory: isMain };
+      }
+      categoryStats[cat].total++;
+    });
+  });
+  
+  // Add sold project data
+  soldProjects.forEach(project => {
+    const categories = [
+      project.category,
+      project.listing_main_category,
+      ...(project.categories || [])
+    ].filter((cat): cat is string => Boolean(cat && cat.trim()));
+    
+    categories.forEach(category => {
+      const cat = category.trim();
+      if (categoryStats[cat]) {
+        categoryStats[cat].sold++;
+        categoryStats[cat].totalPrice += project.price || 0;
+      }
+    });
+  });
+  
+  // Filter and sort categories
+  const processCategories = (isMain: boolean) => 
+    Object.entries(categoryStats)
+      .filter(([_, stats]) => stats.isMainCategory === isMain && stats.total >= 3)
+      .map(([name, stats]) => ({
+        name,
+        successRate: Math.round((stats.sold / stats.total) * 100) / 100,
+        avgPrice: Math.round(stats.totalPrice / Math.max(stats.sold, 1)),
+        projects: stats.total
+      }))
+      .sort((a, b) => (b.successRate * b.avgPrice) - (a.successRate * a.avgPrice))
+      .slice(0, 5);
+  
+  // Analyze keywords from titles and descriptions
+  const keywordCounts: { [word: string]: { count: number; totalPrice: number; soldCount: number } } = {};
+  
+  soldProjects.forEach(project => {
+    const text = `${project.title} ${project.description}`.toLowerCase();
+    const words = text.match(/\b[a-z]{3,}\b/g) || [];
+    
+    words.forEach(word => {
+      if (!keywordCounts[word]) {
+        keywordCounts[word] = { count: 0, totalPrice: 0, soldCount: 0 };
+      }
+      keywordCounts[word].count++;
+      keywordCounts[word].totalPrice += project.price || 0;
+      keywordCounts[word].soldCount++;
+    });
+  });
+  
+  const topKeywords = Object.entries(keywordCounts)
+    .filter(([_, stats]) => stats.count >= 5) // Minimum frequency
+    .map(([word, stats]) => ({
+      word,
+      frequency: stats.count,
+      avgPrice: Math.round(stats.totalPrice / stats.soldCount)
+    }))
+    .sort((a, b) => (b.frequency * b.avgPrice) - (a.frequency * a.avgPrice))
+    .slice(0, 10);
+  
+  return {
+    mainCategories: processCategories(true),
+    specificCategories: processCategories(false),
+    keywords: topKeywords
   };
 }

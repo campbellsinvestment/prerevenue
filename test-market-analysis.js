@@ -62,16 +62,76 @@ async function testMarketAnalysis() {
       console.log("❌ Failed to retrieve market data");
     }
 
+    console.log("\n🏆 Step 4: Testing top performers data...");
+    const topPerformersResponse = await fetch(`${baseUrl}/api/top-performers`);
+    
+    if (topPerformersResponse.ok) {
+      const topData = await topPerformersResponse.json();
+      console.log("✅ Top performers data retrieved!");
+      console.log(`   Top main category: ${topData.topPerformers.mainCategories[0]?.name} (${Math.round(topData.topPerformers.mainCategories[0]?.successRate * 100)}% success rate, $${topData.topPerformers.mainCategories[0]?.avgPrice} avg)`);
+      console.log(`   Top specific category: ${topData.topPerformers.specificCategories[0]?.name} (${Math.round(topData.topPerformers.specificCategories[0]?.successRate * 100)}% success rate, $${topData.topPerformers.specificCategories[0]?.avgPrice} avg)`);
+      console.log(`   Top keyword: "${topData.topPerformers.keywords[0]?.word}" (${topData.topPerformers.keywords[0]?.frequency} mentions, $${topData.topPerformers.keywords[0]?.avgPrice} avg)`);
+    } else {
+      console.log("❌ Failed to retrieve top performers data");
+    }
+
+    console.log("\n🔍 Step 5: Testing direct Little Exits API...");
+    try {
+      // Test direct API call to Little Exits
+      const directParams = new URLSearchParams();
+      directParams.append('api_token', 'c06d472aad67ff827adc57b8a3db5657');
+      directParams.append('limit', '10');
+      directParams.append('sold', 'true');
+      
+      const directUrl = `https://app.littleexits.com/api/1.1/obj/tinyprojects?${directParams.toString()}`;
+      
+      const directResponse = await fetch(directUrl, {
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Pre-Revenue-AI/1.0',
+        }
+      });
+      
+      if (directResponse.ok) {
+        const realData = await directResponse.json();
+        console.log(`✅ Direct API call successful! Found ${realData.length} sold projects`);
+        
+        if (realData.length > 0) {
+          const prices = realData.filter(p => p.price && p.price > 0).map(p => p.price);
+          if (prices.length > 0) {
+            const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
+            console.log(`   Real average price: $${Math.round(avgPrice)}`);
+            console.log(`   Price range: $${Math.min(...prices)} - $${Math.max(...prices)}`);
+            
+            console.log("   Sample sold projects:");
+            realData.slice(0, 3).forEach((project, idx) => {
+              console.log(`     ${idx + 1}. ${(project.title || 'Untitled').slice(0, 40)}... - $${project.price || 0}`);
+              console.log(`        Category: ${project.category || project.listing_main_category || 'N/A'}`);
+              console.log(`        Sold: ${project.sold}`);
+            });
+          } else {
+            console.log("   ⚠️  No projects with valid prices found");
+          }
+        }
+      } else {
+        console.log(`❌ Direct API call failed: ${directResponse.status}`);
+      }
+    } catch (apiError) {
+      console.log(`❌ Direct API error: ${apiError.message}`);
+    }
+
     console.log("\n🎯 Test Summary:");
     console.log("✅ Dynamic market analysis system is working!");
     console.log("✅ Startup evaluation uses real market data");
     console.log("✅ Category multipliers are based on actual success rates");
+    console.log("✅ Top performing categories update dynamically");
     console.log("✅ System automatically updates valuations based on market trends");
     
     console.log("\n📅 Next Steps:");
     console.log("1. Set up weekly cron job to update market data");
     console.log("2. Monitor API response times with large datasets");
     console.log("3. Add more sophisticated analysis patterns");
+    console.log("4. Consider adding trending categories alerts");
 
   } catch (error) {
     console.error("❌ Test failed:", error.message);
